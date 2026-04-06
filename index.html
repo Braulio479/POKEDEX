@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex con Generación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- VARIABLES --- */
+        :root {
+            --bg-color: #f6f8fc;
+            --card-bg: #ffffff;
+            --text-primary: #333;
+            --accent-color: #ff5252;
+            --modal-overlay: rgba(0, 0, 0, 0.85);
+            
+            /* Tipos */
+            --normal: #A8A77A; --fire: '#EE8130'; --water: '#6390F0';
+            --electric: '#F7D02C'; --grass: '#7AC74C'; --ice: '#96D9D6';
+            --fighting: '#C22E28'; --poison: '#A33EA1'; --ground: '#E2BF65';
+            --flying: '#A98FF3'; --psychic: '#F95587'; --bug: '#A6B91A';
+            --rock: '#B6A136'; --ghost: '#735797'; --dragon: '#6F35FC';
+            --dark: '#705746'; --steel: '#B7B7CE'; --fairy: '#D685AD';
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-primary); overflow-x: hidden; }
+
+        /* --- HEADER --- */
+        header {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            padding: 2rem 1rem; text-align: center; color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); position: relative;
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+        .search-container { max-width: 500px; margin: 0 auto; }
+        #search-input { width: 100%; padding: 12px 25px; border-radius: 30px; border: none; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); outline: none; }
+
+        /* --- GRID --- */
+        main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        #pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; min-height: 50vh; }
+
+        /* --- TARJETAS --- */
+        .card {
+            background: var(--card-bg); border-radius: 15px; padding: 20px; text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.2s; cursor: pointer; position: relative;
+        }
+        .card:hover { transform: translateY(-10px); }
+        .card-img-container { width: 120px; height: 120px; margin: 0 auto 15px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .card img { width: 100%; height: 100%; object-fit: contain; }
+        .card-name { font-size: 1.2rem; text-transform: capitalize; font-weight: 600; margin-bottom: 10px; }
+        .types { display: flex; justify-content: center; gap: 5px; }
+        .type-badge { padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; color: white; text-transform: capitalize; font-weight: 600; }
+
+        /* --- MODAL --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: var(--modal-overlay); backdrop-filter: blur(5px); align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal.show { display: flex; opacity: 1; }
+        .modal-content {
+            background-color: white; width: 95%; max-width: 900px; border-radius: 20px;
+            position: relative; display: flex; flex-direction: column; overflow: hidden;
+            max-height: 90vh; overflow-y: auto;
+            animation: slideUp 0.4s ease-out;
+        }
+        @media(min-width: 768px) { .modal-content { flex-direction: row; height: 600px; overflow: hidden; } }
+        
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; color: #333; cursor: pointer; z-index: 50; background: none; border: none; }
+
+        /* Paneles del Modal */
+        .modal-left {
+            background: linear-gradient(to bottom right, #f0f0f0, #e0e0e0);
+            padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1;
+            border-right: 1px solid #eee;
+        }
+        .modal-right { padding: 2rem; flex: 1.5; display: flex; flex-direction: column; overflow-y: auto; }
+
+        /* Imagen y Datos */
+        .modal-left img { width: 220px; height: 220px; object-fit: contain; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.2)); transition: transform 0.3s; }
+        .modal-title { font-size: 2.2rem; text-transform: capitalize; margin-bottom: 0.5rem; color: #333; }
+        
+        /* INFO PILLS (Datos rápidos) */
+        .info-pills { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+        .pill { background: #eee; padding: 5px 12px; border-radius: 15px; font-size: 0.85rem; font-weight: 600; color: #555; }
+
+        /* BARRA EVOLUTIVA CON REQUISITOS */
+        .evolution-nav {
+            background: #fff; padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            flex-shrink: 0;
+        }
+        .evo-title { font-size: 1rem; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .evo-timeline {
+            display: flex; align-items: center; gap: 5px; overflow-x: auto; width: 100%; padding: 10px 0;
+            scrollbar-width: thin; 
+        }
+        .evo-timeline::-webkit-scrollbar { height: 6px; }
+        .evo-timeline::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+        /* Pasos (Pokémon) */
+        .evo-step {
+            display: flex; flex-direction: column; align-items: center; min-width: 80px;
+            cursor: pointer; opacity: 0.6; transition: all 0.2s; position: relative;
+            flex-shrink: 0;
+        }
+        .evo-step:hover { opacity: 1; transform: scale(1.1); }
+        .evo-step.active { opacity: 1; transform: scale(1.15); }
+        .evo-step img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 5px; border-radius: 50%; padding: 5px; background: rgba(255,255,255,0.5); border: 2px solid transparent; }
+        .evo-step.active img { border-color: #333; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .evo-step span { font-size: 0.75rem; text-transform: capitalize; font-weight: 600; text-align: center; }
+        .evo-step.active span { color: #000; font-weight: 800; }
+
+        /* Conector y Requisito */
+        .evo-connector {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 70px; flex-shrink: 0; padding: 0 5px;
+        }
+        .evo-req-text {
+            font-size: 0.7rem; font-weight: 700; color: #ff9800;
+            text-align: center; margin-bottom: 4px; background: #fff3e0;
+            padding: 2px 6px; border-radius: 8px; border: 1px solid #ffe0b2;
+            text-transform: capitalize; white-space: nowrap;
+        }
+        .evo-arrow { color: #ccc; font-size: 1.2rem; font-weight: bold; }
+
+        /* Estadísticas */
+        .stats-container { margin-top: 10px; flex-grow: 1; }
+        .stat-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 0.9rem; }
+        .stat-name { width: 100px; font-weight: 600; color: #555; text-transform: uppercase; font-size: 0.75rem; }
+        .stat-value { width: 35px; text-align: right; margin-right: 10px; font-weight: 800; }
+        .stat-bar-bg { flex: 1; height: 8px; background-color: #eee; border-radius: 4px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 0.6s ease-out; }
+
+        /* Utilidades */
+        .hidden { display: none !important; }
+        #loader { display: none; text-align: center; margin: 2rem 0; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #ff0000; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Pokédex Ultimate</h1>
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Buscar Pokémon (ej. Pikachu)...">
+        </div>
+    </header>
+
+    <main>
+        <div id="pokedex-grid"></div>
+        <div id="loader"><div class="spinner"></div><p style="margin-top: 10px; color: #666;">Cargando...</p></div>
+        <div id="load-more-container" style="text-align: center; margin: 3rem 0;">
+            <button id="load-more-btn" class="btn" style="background:#333; color:white; border:none; padding:12px 30px; border-radius:30px; cursor:pointer;">Cargar más</button>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            
+            <!-- Panel Izquierdo -->
+            <div class="modal-left" id="modal-left-bg">
+                <img id="modal-img" src="" alt="Pokemon">
+                <div class="types" id="modal-types" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Panel Derecho -->
+            <div class="modal-right">
+                <h2 class="modal-title" id="modal-name">Nombre</h2>
+                <div class="info-pills">
+                    <span class="pill">ID: <span id="modal-id">#0</span></span>
+                    <!-- AÑADIDO GENERACIÓN -->
+                    <span class="pill">Generación: <span id="modal-gen">-</span></span>
+                    <span class="pill">Altura: <span id="modal-height">0.0m</span></span>
+                    <span class="pill">Peso: <span id="modal-weight">0.0kg</span></span>
+                </div>
+
+                <h3>Estadísticas Base</h3>
+                <div class="stats-container" id="modal-stats"></div>
+            </div>
+            
+            <!-- Panel Inferior: Evolución con Requisitos -->
+            <div class="evolution-nav">
+                <div class="evo-title">Línea Evolutiva</div>
+                <div class="evo-timeline" id="evo-timeline">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const pokedexGrid = document.getElementById('pokedex-grid');
+        const loader = document.getElementById('loader');
+        const searchInput = document.getElementById('search-input');
+        const modal = document.getElementById('modal');
+        const evoTimeline = document.getElementById('evo-timeline');
+
+        const typeColors = {
+            normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C',
+            grass: '#7AC74C', ice: '#96D9D6', fighting: '#C22E28', poison: '#A33EA1',
+            ground: '#E2BF65', flying: '#A98FF3', psychic: '#F95587', bug: '#A6B91A',
+            rock: '#B6A136', ghost: '#735797', dragon: '#6F35FC', dark: '#705746',
+            steel: '#B7B7CE', fairy: '#D685AD',
+        };
+        const statNames = { 'hp': 'PS', 'attack': 'Ataque', 'defense': 'Defensa', 'special-attack': 'Atq. Esp', 'special-defense': 'Def. Esp', 'speed': 'Velocidad' };
+
+        let offset = 0; const limit = 20; let isLoading = false; let isSearchMode = false;
+
+        // --- INICIO ---
+        document.addEventListener('DOMContentLoaded', fetchPokemons);
+        document.getElementById('load-more-btn').addEventListener('click', () => { offset += limit; fetchPokemons(); });
+
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim().toLowerCase();
+            searchTimeout = setTimeout(() => {
+                if (query === '') { isSearchMode = false; document.getElementById('load-more-container').classList.remove('hidden'); pokedexGrid.innerHTML = ''; offset = 0; fetchPokemons(); }
+                else { isSearchMode = true; document.getElementById('load-more-container').classList.add('hidden'); searchPokemon(query); }
+            }, 500);
+        });
+
+        // --- FETCH PRINCIPAL ---
+        async function fetchPokemons() {
+            if (isLoading) return; isLoading = true; loader.style.display = 'block'; 
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`);
+                const data = await res.json();
+                const promises = data.results.map(p => fetch(p.url).then(r => r.json()));
+                const results = await Promise.all(promises);
+                results.forEach(createCard);
+            } catch (err) { console.error(err); } 
+            finally { isLoading = false; loader.style.display = 'none'; }
+        }
+
+        async function searchPokemon(query) {
+            pokedexGrid.innerHTML = ''; loader.style.display = 'block';
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`);
+                if (!res.ok) throw new Error();
+                const p = await res.json(); createCard(p);
+            } catch { pokedexGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">No encontrado.</div>`; }
+            finally { loader.style.display = 'none'; }
+        }
+
+        function createCard(p) {
+            const card = document.createElement('div'); card.className = 'card';
+            const mainType = p.types[0].type.name;
+            card.style.borderBottom = `5px solid ${typeColors[mainType]}`;
+            const imgSrc = p.sprites.other['official-artwork'].front_default || p.sprites.front_default || '';
+            const typesHtml = p.types.map(t => `<span class="type-badge" style="background-color: ${typeColors[t.type.name]}">${t.type.name}</span>`).join('');
+            card.innerHTML = `<div class="card-img-container"><img src="${imgSrc}"></div><h3 class="card-name">${p.name}</h3><div class="types">${typesHtml}</div>`;
+            card.addEventListener('click', () => openModal(p));
+            pokedexGrid.appendChild(card);
+        }
+
+        // --- UTILIDAD: CONVERTIR GENERACIÓN A NÚMERO ROMANO ---
+        function getGenerationRom(genString) {
+            if(!genString) return '?';
+            const map = {
+                'generation-i': 'I', 'generation-ii': 'II', 'generation-iii': 'III',
+                'generation-iv': 'IV', 'generation-v': 'V', 'generation-vi': 'VI',
+                'generation-vii': 'VII', 'generation-viii': 'VIII', 'generation-ix': 'IX'
+            };
+            return map[genString] || genString.replace('generation-', '').toUpperCase();
+        }
+
+        // --- MODAL Y LÓGICA DE EVOLUCIÓN ---
+
+        let currentEvolutionChainUrl = null;
+
+        async function openModal(pokemon) {
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            updateModalContent(pokemon);
+
+            try {
+                const speciesRes = await fetch(pokemon.species.url);
+                const speciesData = await speciesRes.json();
+                
+                // ACTUALIZAR GENERACIÓN
+                const genName = getGenerationRom(speciesData.generation.name);
+                document.getElementById('modal-gen').textContent = genName;
+
+                if (currentEvolutionChainUrl !== speciesData.evolution_chain.url) {
+                    currentEvolutionChainUrl = speciesData.evolution_chain.url;
+                    const evoRes = await fetch(currentEvolutionChainUrl);
+                    const evoData = await evoRes.json();
+                    renderEvolutionTimeline(evoData.chain, pokemon.name);
+                } else {
+                    highlightActiveEvo(pokemon.name);
+                }
+            } catch (err) {
+                console.error("Error datos", err);
+                evoTimeline.innerHTML = '<span style="font-size:0.8rem; color:#999;">Sin datos de evolución</span>';
+            }
+        }
+
+        async function switchPokemonInModal(pokemonName) {
+            // Indicador visual de carga
+            document.getElementById('modal-name').textContent = "Cargando...";
+            
+            try {
+                // 1. Obtener datos del Pokémon
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonName}`);
+                const p = await res.json();
+                
+                // 2. Obtener datos de Especie (para la Generación)
+                const speciesRes = await fetch(p.species.url);
+                const speciesData = await speciesRes.json();
+
+                // 3. Actualizar UI
+                updateModalContent(p);
+                
+                // Actualizar Generación
+                const genName = getGenerationRom(speciesData.generation.name);
+                document.getElementById('modal-gen').textContent = genName;
+
+                highlightActiveEvo(pokemonName);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('modal-name').textContent = "Error";
+            }
+        }
+
+        function updateModalContent(pokemon) {
+            document.getElementById('modal-name').textContent = pokemon.name;
+            document.getElementById('modal-id').textContent = `#${pokemon.id.toString().padStart(3,'0')}`;
+            document.getElementById('modal-height').textContent = `${pokemon.height/10}m`;
+            document.getElementById('modal-weight').textContent = `${pokemon.weight/10}kg`;
+            
+            const imgSrc = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+            document.getElementById('modal-img').src = imgSrc;
+
+            const mainType = pokemon.types[0].type.name;
+            document.getElementById('modal-left-bg').style.background = `linear-gradient(135deg, ${typeColors[mainType]}40, #ffffff)`;
+            
+            document.getElementById('modal-types').innerHTML = pokemon.types.map(t => 
+                `<span class="type-badge" style="background-color: ${typeColors[t.type.name]}; font-size:1rem; padding:6px 16px;">${t.type.name}</span>`
+            ).join('');
+
+            const container = document.getElementById('modal-stats');
+            container.innerHTML = '';
+            pokemon.stats.forEach(stat => {
+                const name = statNames[stat.stat.name] || stat.stat.name;
+                const val = stat.base_stat;
+                const pct = Math.min((val/255)*100, 100);
+                const barColor = val >= 80 ? '#4caf50' : (val >= 50 ? '#ffcb52' : '#ff5252');
+                container.innerHTML += `
+                    <div class="stat-row">
+                        <div class="stat-name">${name}</div>
+                        <div class="stat-value">${val}</div>
+                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${pct}%; background:${barColor}"></div></div>
+                    </div>`;
+            });
+        }
+
+        // --- EXTRACCIÓN INTELIGENTE DE EVOLUCIONES ---
+        function getLinearPathWithDetails(chain) {
+            let path = [];
+            let current = chain;
+            path.push({ name: current.species.name, req: null });
+
+            while (current.evolves_to && current.evolves_to.length > 0) {
+                const nextEvo = current.evolves_to[0];
+                const details = nextEvo.evolution_details[0];
+                let reqText = "Desconocido";
+                
+                if (details) {
+                    if (details.min_level) reqText = `Nivel ${details.min_level}`;
+                    else if (details.item) {
+                        const itemName = details.item.name.replace('-', ' ').replace('stone', 'Piedra');
+                        reqText = itemName;
+                    }
+                    else if (details.trigger.name === 'trade') {
+                        reqText = "Intercambiar";
+                        if (details.trade_item) reqText += ` (${details.trade_item.name.replace('-', ' ')})`;
+                    }
+                    else if (details.trigger.name === 'friendship') reqText = "Amistad";
+                    else if (details.trigger.name === 'use-item') reqText = details.item.name.replace('-', ' ');
+                }
+
+                path.push({ name: nextEvo.species.name, req: reqText });
+                current = nextEvo;
+            }
+            return path;
+        }
+
+        async function renderEvolutionTimeline(chain, currentName) {
+            const pathData = getLinearPathWithDetails(chain);
+            evoTimeline.innerHTML = '<div class="spinner" style="width:20px; height:20px;"></div>';
+
+            const promises = pathData.map(item => 
+                fetch(`https://pokeapi.co/api/v2/pokemon/${item.name}`).then(r => r.json())
+            );
+            
+            try {
+                const pokemons = await Promise.all(promises);
+                evoTimeline.innerHTML = ''; 
+
+                pokemons.forEach((p, index) => {
+                    const isActive = p.name === currentName;
+                    const img = p.sprites.front_default;
+                    const req = pathData[index].req;
+
+                    const step = document.createElement('div');
+                    step.className = `evo-step ${isActive ? 'active' : ''}`;
+                    step.dataset.name = p.name;
+                    step.onclick = () => switchPokemonInModal(p.name);
+                    step.innerHTML = `<img src="${img}"><span>${p.name}</span>`;
+                    evoTimeline.appendChild(step);
+
+                    if (index < pokemons.length - 1) {
+                        const connector = document.createElement('div');
+                        connector.className = 'evo-connector';
+                        const nextReq = pathData[index + 1].req; 
+                        connector.innerHTML = `
+                            <div class="evo-req-text">${nextReq}</div>
+                            <div class="evo-arrow">&#8594;</div>
+                        `;
+                        evoTimeline.appendChild(connector);
+                    }
+                });
+            } catch (e) {
+                evoTimeline.innerHTML = "Error cargando familia.";
+            }
+        }
+
+        function highlightActiveEvo(name) {
+            const steps = document.querySelectorAll('.evo-step');
+            steps.forEach(step => {
+                if (step.dataset.name === name) step.classList.add('active');
+                else step.classList.remove('active');
+            });
+        }
+
+        function closeModal() { modal.classList.remove('show'); document.body.style.overflow = 'auto'; }
+        window.onclick = (e) => { if (e.target == modal) closeModal(); };
+        document.addEventListener('keydown', (e) => { if (e.key === "Escape") closeModal(); });
+
+    </script>
+</body>
+</html>
