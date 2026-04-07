@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#cc0000">
-    <meta name="description" content="Pokedex Ultimate Completa">
+    <meta name="description" content="Pokedex Ultimate Rápida">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png">
     
@@ -79,7 +79,7 @@
         .menu-dropdown {
             display: none; position: absolute; right: 0; top: 110%;
             background: var(--card-bg); color: var(--text-primary);
-            min-width: 220px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-width: 240px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             border-radius: 8px; overflow: hidden; z-index: 200;
         }
         .menu-dropdown.show { display: block; animation: fadeIn 0.2s; }
@@ -87,11 +87,12 @@
             width: 100%; padding: 12px 15px; text-align: left; background: none; border: none;
             cursor: pointer; font-size: 0.9rem; font-family: inherit; color: inherit;
             border-bottom: 1px solid var(--border-color); transition: background 0.2s;
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; flex-direction: column;
         }
+        .menu-item span.subtext { font-size: 0.75rem; opacity: 0.6; font-weight: normal; margin-top: 2px; }
         .menu-item:hover { background: rgba(0,0,0,0.05); }
         .menu-item:last-child { border-bottom: none; }
-        .status-badge { color: #4caf50; font-weight: bold; }
+        .status-badge { color: #4caf50; font-weight: bold; align-self: flex-end; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -221,8 +222,14 @@
                 <div id="dropdown" class="menu-dropdown">
                     <button class="menu-item" onclick="toggleTheme()">🌓 Modo Oscuro/Claro</button>
                     <button class="menu-item" onclick="openTypeFilter()">🔥 Filtrar por Tipo</button>
-                    <button class="menu-item" id="btn-download-action" onclick="startFullDownload()">
-                        <span>⬇️ Descargar Todo (Offline)</span>
+                    <div style="border-top: 1px solid var(--border-color); margin: 5px 0;"></div>
+                    <button class="menu-item" onclick="startOptimizedDownload(false)">
+                        <strong>📥 Descargar Pokémon</strong>
+                        <span class="subtext">Rápido (~500MB)</span>
+                    </button>
+                    <button class="menu-item" onclick="startOptimizedDownload(true)">
+                        <strong>📦 Descargar TODO</strong>
+                        <span class="subtext">Incluye Objetos (Lento)</span>
                         <span id="download-badge" class="status-badge"></span>
                     </button>
                 </div>
@@ -308,14 +315,12 @@
         </div>
     </div>
 
-    <!-- MODAL FILTRO DE TIPOS (NUEVO) -->
+    <!-- MODAL FILTRO DE TIPOS -->
     <div id="type-filter-modal" class="modal">
         <div class="modal-content">
             <button class="close-btn" onclick="closeModal('type-filter-modal')">&times;</button>
             <h2 style="text-align:center; margin-bottom:10px;">Selecciona un Elemento</h2>
-            <div class="type-grid" id="type-grid-container">
-                <!-- Se llena con JS -->
-            </div>
+            <div class="type-grid" id="type-grid-container"></div>
         </div>
     </div>
 
@@ -339,82 +344,22 @@
         let isSearching = false; 
         let db;
 
-        // --- INICIALIZACIÓN DE FILTRO DE TIPOS ---
+        // --- INICIALIZACIÓN ---
         function initTypeFilter() {
             const container = document.getElementById('type-grid-container');
             container.innerHTML = '';
-            const types = Object.keys(typeColors);
-            
-            types.forEach(type => {
+            Object.keys(typeColors).forEach(type => {
                 const btn = document.createElement('button');
                 btn.className = 'type-filter-btn';
                 btn.style.backgroundColor = typeColors[type];
                 btn.innerHTML = `<div class="type-icon-placeholder">●</div>${type}`;
-                btn.onclick = () => {
-                    closeModal('type-filter-modal');
-                    filterByType(type);
-                };
+                btn.onclick = () => { closeModal('type-filter-modal'); filterByType(type); };
                 container.appendChild(btn);
             });
         }
 
-        function openTypeFilter() {
-            closeMenu();
-            document.getElementById('type-filter-modal').classList.add('show');
-        }
-
-        async function filterByType(type) {
-            if(!navigator.onLine) {
-                alert("Necesitas conexión para filtrar por tipo.");
-                return;
-            }
-
-            isSearching = true;
-            document.getElementById('scroll-sentinel').style.display = 'none';
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('pokedex-grid').innerHTML = '';
-            
-            // Limpiar input de búsqueda
-            document.getElementById('search-input').value = '';
-
-            try {
-                // 1. Obtener lista de Pokémon de ese tipo
-                const res = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
-                const data = await res.json();
-                
-                // 2. Obtener detalles de los primeros 20 para mostrar
-                const pokemonList = data.pokemon.slice(0, 50); // Mostrar top 50
-                const promises = pokemonList.map(p => fetch(p.pokemon.url).then(r => r.json()));
-                const results = await Promise.all(promises);
-                
-                document.getElementById('pokedex-grid').innerHTML = '';
-                results.forEach(p => createCard(p));
-                
-                // Mensaje de estado
-                const headerInfo = document.createElement('div');
-                headerInfo.style.gridColumn = "1/-1";
-                headerInfo.style.textAlign = "center";
-                headerInfo.style.padding = "10px";
-                headerInfo.style.background = typeColors[type];
-                headerInfo.style.color = "white";
-                headerInfo.style.borderRadius = "10px";
-                headerInfo.style.marginBottom = "15px";
-                headerInfo.style.fontWeight = "bold";
-                headerInfo.innerText = `Mostrando Pokémon tipo: ${type.toUpperCase()}`;
-                document.getElementById('pokedex-grid').prepend(headerInfo);
-
-            } catch(e) {
-                console.error(e);
-                document.getElementById('pokedex-grid').innerHTML = "Error al cargar tipo.";
-            } finally {
-                document.getElementById('loader').style.display = 'none';
-            }
-        }
-
-        // --- TEMA Y MENÚ ---
         function initTheme() {
-            const isDark = localStorage.getItem('theme') === 'dark';
-            if (isDark) document.body.classList.add('dark-mode');
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
             if(localStorage.getItem('downloadComplete') === 'true') updateDownloadMenuUI(true);
             initTypeFilter();
         }
@@ -429,14 +374,8 @@
         function closeMenu() { document.getElementById('dropdown').classList.remove('show'); }
         
         function updateDownloadMenuUI(complete) {
-            const btn = document.getElementById('btn-download-action');
             const badge = document.getElementById('download-badge');
-            if(complete) {
-                btn.querySelector('span').innerText = "Archivos Completos";
-                badge.innerText = "👍";
-                btn.onclick = null;
-                btn.style.cursor = 'default';
-            }
+            if(complete) badge.innerText = "👍";
         }
 
         window.onclick = function(event) {
@@ -445,17 +384,14 @@
         }
 
         // --- INDEXEDDB ---
-        const DB_NAME = 'PokedexOfflineDB';
-        const STORE_NAME = 'assets';
-
         function initDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
+                const request = indexedDB.open('PokedexOfflineDB', 1);
                 request.onupgradeneeded = (e) => {
-                    db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets');
                 };
-                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onsuccess = (e) => resolve(e.target.result);
                 request.onerror = (e) => reject(e);
             });
         }
@@ -465,16 +401,15 @@
             try {
                 const response = await fetch(url);
                 const blob = await response.blob();
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(blob, url);
+                const tx = db.transaction('assets', 'readwrite');
+                tx.objectStore('assets').put(blob, url);
             } catch (e) {}
         }
 
         async function getImageFromDB(url) {
             if(!db) return null;
             return new Promise((resolve) => {
-                const tx = db.transaction(STORE_NAME, 'readonly');
-                const req = tx.objectStore(STORE_NAME).get(url);
+                const req = db.transaction('assets', 'readonly').objectStore('assets').get(url);
                 req.onsuccess = () => resolve(req.result ? URL.createObjectURL(req.result) : null);
                 req.onerror = () => resolve(null);
             });
@@ -490,7 +425,7 @@
         // --- INICIO Y SCROLL ---
         document.addEventListener('DOMContentLoaded', async () => {
             initTheme();
-            await initDB();
+            db = await initDB();
             const cachedPoke = localStorage.getItem('allPokemonList');
             const cachedItems = localStorage.getItem('allItemsList');
             document.getElementById('loader').style.display = 'block';
@@ -498,8 +433,7 @@
             if (navigator.onLine) {
                 try {
                     const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
-                    const data = await res.json();
-                    allPokemonList = data.results;
+                    allPokemonList = (await res.json()).results;
                     localStorage.setItem('allPokemonList', JSON.stringify(allPokemonList));
                     await fetchItemsList();
                     await fetchPokemons();
@@ -517,10 +451,10 @@
                 }
             }, { rootMargin: '100px' });
             
-            const sentinelPoke = document.getElementById('scroll-sentinel');
-            const sentinelItems = document.getElementById('scroll-sentinel-items');
-            if(sentinelPoke) observer.observe(sentinelPoke);
-            if(sentinelItems) observer.observe(sentinelItems);
+            ['scroll-sentinel', 'scroll-sentinel-items'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) observer.observe(el);
+            });
         }
 
         function loadFromCache() {
@@ -534,8 +468,7 @@
         async function fetchItemsList() {
             try {
                 const r = await fetch('https://pokeapi.co/api/v2/item?limit=10000');
-                const d = await r.json();
-                allItemsList = d.results;
+                allItemsList = (await r.json()).results;
                 localStorage.setItem('allItemsList', JSON.stringify(allItemsList));
             } catch(e) {}
         }
@@ -592,19 +525,13 @@
 
                 if (currentTab === 'pokemon') {
                     gridPoke.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
-                    if(allPokemonList.length === 0) {
-                        gridPoke.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Cargando lista para buscar...</div>';
-                        return;
-                    }
+                    if(allPokemonList.length === 0) { gridPoke.innerHTML = 'Cargando lista...'; return; }
                     const matches = allPokemonList.filter(p => p.name.includes(q));
                     if (matches.length === 0) { gridPoke.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; return; }
                     Promise.all(matches.slice(0, 50).map(p => fetch(p.url).then(r => r.json()))).then(results => { gridPoke.innerHTML = ''; results.forEach(p => createCard(p)); });
                 } else {
                     gridItems.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
-                    if(allItemsList.length === 0) {
-                        gridItems.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Cargando lista para buscar...</div>';
-                        return;
-                    }
+                    if(allItemsList.length === 0) { gridItems.innerHTML = 'Cargando lista...'; return; }
                     const matches = allItemsList.filter(i => i.name.includes(q));
                     if (matches.length === 0) { gridItems.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; return; }
                     gridItems.innerHTML = ''; 
@@ -621,9 +548,7 @@
         // --- API POKÉMON ---
         async function fetchPokemons() {
             if (isLoadingPoke || isSearching) return;
-            if(!navigator.onLine && allPokemonList.length === 0) {
-                 document.getElementById('loader').innerHTML = "<p>Sin conexión y sin datos.</p>"; document.getElementById('loader').style.display = 'block'; return;
-            }
+            if(!navigator.onLine && allPokemonList.length === 0) { document.getElementById('loader').innerHTML = "Sin conexión y sin datos."; document.getElementById('loader').style.display = 'block'; return; }
             isLoadingPoke = true; document.getElementById('loader').style.display = 'block';
             try {
                 let dataResults;
@@ -646,7 +571,6 @@
             div.onclick = () => openModal(p); document.getElementById('pokedex-grid').appendChild(div);
         }
 
-        // --- MODAL POKÉMON Y EVOLUCIONES ---
         async function openModal(p) {
             const m = document.getElementById('modal'); m.classList.add('show'); updatePokeContent(p);
             try {
@@ -721,12 +645,25 @@
         }
         function highlightEvo(name) { document.querySelectorAll('.evo-step').forEach(e => e.classList.toggle('active', e.dataset.name===name)); }
 
-        // --- API OBJETOS ---
+        async function filterByType(type) {
+            if(!navigator.onLine) { alert("Necesitas conexión para filtrar por tipo."); return; }
+            isSearching = true; document.getElementById('scroll-sentinel').style.display = 'none'; document.getElementById('loader').style.display = 'block'; document.getElementById('pokedex-grid').innerHTML = ''; document.getElementById('search-input').value = '';
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
+                const data = await res.json();
+                const pokemonList = data.pokemon.slice(0, 50);
+                const promises = pokemonList.map(p => fetch(p.pokemon.url).then(r => r.json()));
+                const results = await Promise.all(promises);
+                document.getElementById('pokedex-grid').innerHTML = ''; results.forEach(p => createCard(p));
+                const headerInfo = document.createElement('div');
+                headerInfo.style.gridColumn = "1/-1"; headerInfo.style.textAlign = "center"; headerInfo.style.padding = "10px"; headerInfo.style.background = typeColors[type]; headerInfo.style.color = "white"; headerInfo.style.borderRadius = "10px"; headerInfo.style.marginBottom = "15px"; headerInfo.style.fontWeight = "bold"; headerInfo.innerText = `Pokémon tipo: ${type.toUpperCase()}`;
+                document.getElementById('pokedex-grid').prepend(headerInfo);
+            } catch(e) { document.getElementById('pokedex-grid').innerHTML = "Error al cargar tipo."; } finally { document.getElementById('loader').style.display = 'none'; }
+        }
+
         async function fetchItems() {
             if(isLoadingItems || isSearching) return;
-            if(!navigator.onLine && allItemsList.length === 0) {
-                 document.getElementById('items-loader').innerHTML = "<p>Sin conexión.</p>"; document.getElementById('items-loader').style.display = 'block'; return;
-            }
+            if(!navigator.onLine && allItemsList.length === 0) { document.getElementById('items-loader').innerHTML = "Sin conexión."; document.getElementById('items-loader').style.display = 'block'; return; }
             isLoadingItems=true; document.getElementById('items-loader').style.display='block';
             try {
                 let dResults;
@@ -769,16 +706,17 @@
             } catch(e){}
         }
 
-        // --- DESCARGA COMPLETA ---
-        async function startFullDownload() {
+        // --- DESCARGA OPTIMIZADA (RÁPIDA) ---
+        async function startOptimizedDownload(includeItems) {
             closeMenu();
             if(!navigator.onLine) { alert("Necesitas internet para descargar."); return; }
+            
             const progressContainer = document.getElementById('download-progress');
             const progressBar = document.getElementById('progress-fill');
             const progressText = document.getElementById('progress-text');
             progressContainer.style.display = 'block';
-            progressText.innerText = "Obteniendo listas completas...";
-            progressBar.style.width = "5%";
+            progressText.innerText = "Iniciando descarga turbo...";
+            progressBar.style.width = "1%";
 
             try {
                 if(allPokemonList.length === 0) {
@@ -786,22 +724,31 @@
                     allPokemonList = (await r.json()).results;
                     localStorage.setItem('allPokemonList', JSON.stringify(allPokemonList));
                 }
-                if(allItemsList.length === 0) {
-                    const r = await fetch('https://pokeapi.co/api/v2/item?limit=10000');
-                    allItemsList = (await r.json()).results;
-                    localStorage.setItem('allItemsList', JSON.stringify(allItemsList));
-                }
-
+                
                 const totalPokes = allPokemonList.length;
-                const totalItems = allItemsList.length;
-                const totalSteps = totalPokes + totalItems;
+                let totalItems = 0;
                 let currentStep = 0;
+                let totalSteps = totalPokes;
+
+                // Configurar pasos totales
+                if(includeItems) {
+                    if(allItemsList.length === 0) {
+                        const r = await fetch('https://pokeapi.co/api/v2/item?limit=10000');
+                        allItemsList = (await r.json()).results;
+                        localStorage.setItem('allItemsList', JSON.stringify(allItemsList));
+                    }
+                    totalItems = allItemsList.length;
+                    totalSteps += totalItems;
+                }
 
                 const updateProgress = () => { progressBar.style.width = `${Math.round((currentStep / totalSteps) * 100)}%`; };
 
+                // --- FASE 1: POKÉMON (OPTIMIZADA) ---
+                // Usamos lotes de 50 (5x más rápido) y eliminamos pausas
                 progressText.innerText = `Descargando Pokémon (0/${totalPokes})...`;
-                for (let i = 0; i < totalPokes; i += 10) {
-                    const batch = allPokemonList.slice(i, i + 10);
+                
+                for (let i = 0; i < totalPokes; i += 50) {
+                    const batch = allPokemonList.slice(i, i + 50);
                     const promises = batch.map(async (p) => {
                         try {
                             const data = await fetch(p.url).then(r => r.json());
@@ -813,21 +760,23 @@
                     currentStep += batch.length;
                     updateProgress();
                     progressText.innerText = `Descargando Pokémon (${Math.min(currentStep, totalPokes)}/${totalPokes})...`;
-                    await new Promise(r => setTimeout(r, 50));
+                    // SIN PAUSA setTimeout para máxima velocidad
                 }
 
-                progressText.innerText = `Descargando Objetos (0/${totalItems})...`;
-                for (let i = 0; i < totalItems; i += 50) {
-                    const batch = allItemsList.slice(i, i + 50);
-                    const promises = batch.map(async (item) => {
-                        const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
-                        await saveImageToDB(img);
-                    });
-                    await Promise.all(promises);
-                    currentStep += batch.length;
-                    updateProgress();
-                    progressText.innerText = `Descargando Objetos (${Math.min(currentStep - totalPokes, totalItems)}/${totalItems})...`;
-                    await new Promise(r => setTimeout(r, 50));
+                // --- FASE 2: OBJETOS (SOLO SI SE SOLICITA) ---
+                if(includeItems) {
+                    progressText.innerText = `Descargando Objetos (0/${totalItems})...`;
+                    for (let i = 0; i < totalItems; i += 100) { // Objetos son ligeros, descargamos de 100 en 100
+                        const batch = allItemsList.slice(i, i + 100);
+                        const promises = batch.map(async (item) => {
+                            const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
+                            await saveImageToDB(img);
+                        });
+                        await Promise.all(promises);
+                        currentStep += batch.length;
+                        updateProgress();
+                        progressText.innerText = `Descargando Objetos (${Math.min(currentStep - totalPokes, totalItems)}/${totalItems})...`;
+                    }
                 }
 
                 localStorage.setItem('downloadComplete', 'true');
