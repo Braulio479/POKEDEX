@@ -6,11 +6,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#cc0000">
-    <meta name="description" content="Pokedex Ultimate con Evoluciones y Buscador">
+    <meta name="description" content="Pokedex Ultimate Offline">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png">
     
-    <title>Pokédex App</title>
+    <title>Pokédex App Offline</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         /* --- VARIABLES --- */
@@ -22,7 +22,7 @@
             --modal-overlay: rgba(0, 0, 0, 0.9);
             
             /* Tipos */
-            --normal: #A8A77A; --fire: '#EE8130'; --water: '#6390F0';
+            --normal: #A8A77A; --fire: #EE8130; --water: '#6390F0';
             --electric: '#F7D02C'; --grass: '#7AC74C'; --ice: '#96D9D6';
             --fighting: '#C22E28'; --poison: '#A33EA1'; --ground: '#E2BF65';
             --flying: '#A98FF3'; --psychic: '#F95587'; --bug: '#A6B91A';
@@ -51,8 +51,20 @@
             top: 0;
             z-index: 100;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 1rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
         
+        /* Botón Offline */
+        .offline-btn-container { margin-bottom: 10px; min-height: 35px; }
+        #btn-download-offline {
+            background: #333; color: #fff; border: 1px solid rgba(255,255,255,0.5);
+            padding: 6px 15px; border-radius: 15px; font-size: 0.8rem; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            transition: background 0.3s;
+        }
+        #btn-download-offline:hover { background: #555; }
+        #btn-download-offline:disabled { opacity: 0.6; cursor: not-allowed; }
+        .status-text { font-size: 0.7rem; color: #ffcccc; display: block; margin-top: 4px; min-height: 1em;}
+
         /* Navegación de Pestañas */
         .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 1rem; }
         .tab-btn {
@@ -93,7 +105,9 @@
             background: var(--card-bg); border-radius: 12px; padding: 15px; text-align: center;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 0.2s;
         }
+        .item-card:hover { transform: translateY(-5px); }
         .item-card:active { transform: scale(0.95); }
         .item-icon { width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; }
         .item-name { font-size: 0.9rem; text-transform: capitalize; font-weight: 700; color: #444; }
@@ -126,51 +140,28 @@
         .info-pills { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
         .pill { background: #eee; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: #555; }
 
-        /* --- ESTILOS EVOLUCIÓN MEJORADOS --- */
+        /* --- ESTILOS EVOLUCIÓN --- */
         .evolution-nav { 
-            background: #fff; 
-            padding: 15px; 
-            border-top: 1px solid #eee; 
-            display: flex; flex-direction: column; align-items: center; gap: 10px; 
-            flex-shrink: 0; 
+            background: #fff; padding: 15px; border-top: 1px solid #eee; 
+            display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; 
         }
-        .evo-title { 
-            font-size: 0.9rem; font-weight: 800; color: #333; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; 
-        }
-        .evo-timeline { 
-            display: flex; align-items: center; gap: 8px; overflow-x: auto; width: 100%; padding: 10px 0; 
-            scrollbar-width: thin; /* Firefox */
-        }
-        .evo-timeline::-webkit-scrollbar { height: 6px; } /* Chrome/Safari */
+        .evo-title { font-size: 0.9rem; font-weight: 800; color: #333; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .evo-timeline { display: flex; align-items: center; gap: 8px; overflow-x: auto; width: 100%; padding: 10px 0; scrollbar-width: thin; }
+        .evo-timeline::-webkit-scrollbar { height: 6px; }
         .evo-timeline::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
         
         .evo-step { 
             display: flex; flex-direction: column; align-items: center; min-width: 80px; cursor: pointer; 
-            opacity: 0.5; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            flex-shrink: 0; 
+            opacity: 0.5; transition: all 0.3s; flex-shrink: 0; 
         }
         .evo-step:active { transform: scale(0.9); }
         .evo-step.active { opacity: 1; transform: scale(1.1); }
-        .evo-step img { 
-            width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; 
-            border-radius: 50%; padding: 5px; background: white; 
-            border: 3px solid transparent; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        .evo-step img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; border-radius: 50%; padding: 5px; background: white; border: 3px solid transparent; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .evo-step.active img { border-color: #ff5252; box-shadow: 0 0 15px rgba(255, 82, 82, 0.4); }
         .evo-step span { font-size: 0.8rem; text-transform: capitalize; font-weight: 700; text-align: center; color: #444; }
         
-        /* Conector y Requisito */
-        .evo-connector { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            width: 80px; flex-shrink: 0; padding: 0 5px; 
-        }
-        .evo-req-text { 
-            font-size: 0.75rem; font-weight: 800; color: #d32f2f; 
-            text-align: center; margin-bottom: 5px; 
-            background: #ffebee; padding: 4px 8px; border-radius: 8px; 
-            border: 1px solid #ffcdd2; 
-            text-transform: capitalize; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+        .evo-connector { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 80px; flex-shrink: 0; padding: 0 5px; }
+        .evo-req-text { font-size: 0.75rem; font-weight: 800; color: #d32f2f; text-align: center; margin-bottom: 5px; background: #ffebee; padding: 4px 8px; border-radius: 8px; border: 1px solid #ffcdd2; text-transform: capitalize; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .evo-arrow { color: #aaa; font-size: 1.2rem; font-weight: bold; }
 
         .stats-container { margin-top: 10px; flex-grow: 1; }
@@ -204,13 +195,20 @@
     <header>
         <h1>Pokédex App</h1>
         
+        <div class="offline-btn-container">
+            <button id="btn-download-offline" onclick="downloadOfflineData()">
+                💾 Guardar Offline
+            </button>
+            <span id="offline-status" class="status-text"></span>
+        </div>
+        
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('pokemon')">Pokémon</button>
             <button class="tab-btn" onclick="switchTab('items')">Objetos</button>
         </div>
 
         <div class="search-container">
-            <input type="text" id="search-input" placeholder="Buscar (ej. 'char', 'a', 'pikachu')...">
+            <input type="text" id="search-input" placeholder="Buscar (ej. 'char', 'a', 'potion')...">
         </div>
     </header>
 
@@ -218,7 +216,7 @@
         <!-- VISTA POKÉMON -->
         <div id="pokemon-view">
             <div id="pokedex-grid" class="grid-container"></div>
-            <div id="loader"><div class="spinner"></div><p style="margin-top:5px; font-size:0.8rem; color:#888;">Cargando lista maestra...</p></div>
+            <div id="loader"><div class="spinner"></div><p style="margin-top:5px; font-size:0.8rem; color:#888;">Cargando lista...</p></div>
             <div id="load-more-container" style="text-align: center; margin: 2rem 0;">
                 <button id="load-more-btn" class="btn">Cargar más</button>
             </div>
@@ -239,7 +237,7 @@
         <div class="modal-content">
             <button class="close-btn" onclick="closeModal('modal')">&times;</button>
             <div class="modal-left" id="modal-left-bg">
-                <img id="modal-img" src="" alt="Pokemon">
+                <img id="modal-img" src="" alt="Pokemon" onerror="handleImageError(this)">
                 <div class="types" id="modal-types" style="margin-top: 15px;"></div>
             </div>
             <div class="modal-right">
@@ -253,12 +251,9 @@
                 <h3 style="font-size:0.9rem; color:#888; margin-bottom:5px;">Estadísticas Base</h3>
                 <div class="stats-container" id="modal-stats"></div>
             </div>
-            <!-- SECCIÓN EVOLUCIÓN -->
             <div class="evolution-nav">
                 <div class="evo-title">Cadena Evolutiva</div>
-                <div class="evo-timeline" id="evo-timeline">
-                    <!-- Se inyecta dinámicamente -->
-                </div>
+                <div class="evo-timeline" id="evo-timeline"></div>
             </div>
         </div>
     </div>
@@ -268,7 +263,7 @@
         <div class="modal-content">
             <button class="close-btn" onclick="closeModal('item-modal')">&times;</button>
             <div class="modal-left">
-                <img id="item-modal-img" src="" alt="Item">
+                <img id="item-modal-img" src="" alt="Item" onerror="handleImageError(this)">
                 <div style="flex:1;">
                     <h2 id="item-modal-name" style="text-transform: capitalize; margin-bottom: 5px; font-size:1.4rem;">Nombre</h2>
                     <span id="item-modal-category" style="background:#eee; padding:2px 8px; border-radius:10px; font-size:0.7rem; color:#666;">Categoría</span>
@@ -299,18 +294,115 @@
         let offsetItems = 0, limitItems = 20, isLoadingItems = false;
         let currentEvoChainUrl = null;
         let allPokemonList = []; 
+        let allItemsList = [];
+        let db;
+
+        // --- INDEXEDDB (BASE DE DATOS OFFLINE) ---
+        const DB_NAME = 'PokedexOfflineDB';
+        const STORE_NAME = 'assets';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        async function saveImageToDB(url) {
+            if(!db) return;
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put(blob, url);
+            } catch (e) { console.log("No se pudo guardar img:", url); }
+        }
+
+        async function getImageFromDB(url) {
+            if(!db) return null;
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(url);
+                req.onsuccess = () => {
+                    if(req.result) resolve(URL.createObjectURL(req.result));
+                    else resolve(null);
+                };
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        // MANEJO DE ERRORES DE IMAGEN (CARGAR OFFLINE)
+        async function handleImageError(imgElement) {
+            const originalSrc = imgElement.src;
+            // Evitar bucles infinitos si ya intentamos cargar desde blob
+            if(originalSrc.startsWith('blob:')) return; 
+
+            const offlineUrl = await getImageFromDB(originalSrc);
+            if(offlineUrl) {
+                imgElement.src = offlineUrl;
+            } else {
+                // Fallback final
+                imgElement.src = 'https://via.placeholder.com/150?text=?';
+            }
+        }
 
         // --- INICIO ---
         document.addEventListener('DOMContentLoaded', async () => {
+            await initDB();
+            
+            // Intentar cargar listas desde LocalStorage primero (para rapidez/offline)
+            const cachedPoke = localStorage.getItem('allPokemonList');
+            const cachedItems = localStorage.getItem('allItemsList');
+
             document.getElementById('loader').style.display = 'block';
-            try {
-                const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
-                const data = await res.json();
-                allPokemonList = data.results;
-                await fetchPokemons();
-            } catch (e) { console.error("Error iniciando app", e); }
-            finally { document.getElementById('loader').style.display = 'none'; }
+
+            if (navigator.onLine) {
+                try {
+                    // Si hay internet, actualizar todo
+                    const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
+                    const data = await res.json();
+                    allPokemonList = data.results;
+                    localStorage.setItem('allPokemonList', JSON.stringify(allPokemonList));
+                    
+                    await fetchItemsList(); // Cargar lista de items también
+                    await fetchPokemons();
+                } catch (e) { 
+                    console.error("Error online, intentando cache...", e);
+                    loadFromCache();
+                }
+            } else {
+                loadFromCache();
+            }
         });
+
+        function loadFromCache() {
+            const cachedPoke = localStorage.getItem('allPokemonList');
+            const cachedItems = localStorage.getItem('allItemsList');
+            if(cachedPoke) allPokemonList = JSON.parse(cachedPoke);
+            if(cachedItems) allItemsList = JSON.parse(cachedItems);
+            fetchPokemons(); // Intenta renderizar lo que haya
+        }
+
+        async function fetchItemsList() {
+            try {
+                const r = await fetch('https://pokeapi.co/api/v2/item?limit=10000');
+                const d = await r.json();
+                allItemsList = d.results;
+                localStorage.setItem('allItemsList', JSON.stringify(allItemsList));
+            } catch(e) { console.error(e); }
+        }
         
         document.getElementById('load-more-btn').addEventListener('click', () => { offsetPoke += limitPoke; fetchPokemons(); });
         document.getElementById('load-more-items-btn').addEventListener('click', () => { offsetItems += limitItems; fetchItems(); });
@@ -321,6 +413,7 @@
             event.target.classList.add('active');
             const search = document.getElementById('search-input');
             search.value = '';
+            
             if (tab === 'pokemon') {
                 document.getElementById('pokemon-view').classList.remove('hidden');
                 document.getElementById('items-view').classList.add('hidden');
@@ -328,8 +421,12 @@
             } else {
                 document.getElementById('pokemon-view').classList.add('hidden');
                 document.getElementById('items-view').classList.remove('hidden');
-                search.placeholder = "Buscar Objeto...";
-                if (document.getElementById('items-grid').children.length === 0) fetchItems();
+                search.placeholder = "Buscar Objeto (ej. 'potion', 'a')...";
+                if (allItemsList.length === 0 && navigator.onLine) {
+                    fetchItemsList().then(() => fetchItems());
+                } else if (document.getElementById('items-grid').children.length === 0) {
+                    fetchItems();
+                }
             }
         }
 
@@ -348,28 +445,72 @@
                     loadMore.classList.add('hidden'); grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
                     const matches = allPokemonList.filter(p => p.name.includes(q));
                     if (matches.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#999; padding:2rem;">No encontrado.</div>'; return; }
-                    Promise.all(matches.slice(0, 12).map(p => fetch(p.url).then(r => r.json()))).then(results => { grid.innerHTML = ''; results.forEach(p => createCard(p)); });
+                    
+                    // Fetchear datos para búsqueda
+                    Promise.all(matches.slice(0, 12).map(p => fetch(p.url).then(r => r.json()))).then(results => { 
+                        grid.innerHTML = ''; 
+                        results.forEach(p => createCard(p)); 
+                    });
                 } else {
-                    if (q === '') { document.getElementById('load-more-items-container').classList.remove('hidden'); document.getElementById('items-grid').innerHTML=''; offsetItems=0; fetchItems(); } 
-                    else { document.getElementById('load-more-items-container').classList.add('hidden'); searchItem(q); }
+                    const grid = document.getElementById('items-grid');
+                    const loadMore = document.getElementById('load-more-items-container');
+                    if (q === '') {
+                        loadMore.classList.remove('hidden'); grid.innerHTML = ''; offsetItems = 0; fetchItems(); return;
+                    }
+                    loadMore.classList.add('hidden'); grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    const matches = allItemsList.filter(i => i.name.includes(q));
+                    if (matches.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#999; padding:2rem;">No encontrado.</div>'; return; }
+                    grid.innerHTML = ''; 
+                    matches.slice(0, 20).forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'item-card';
+                        const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
+                        div.innerHTML = `<img src="${imgUrl}" class="item-icon" onerror="handleImageError(this)"><div class="item-name">${item.name.replace(/-/g,' ')}</div>`;
+                        div.onclick = () => openItem(item.url);
+                        grid.appendChild(div);
+                    });
                 }
             }, 400);
         });
 
         // --- API POKÉMON ---
         async function fetchPokemons() {
-            if (isLoadingPoke) return; isLoadingPoke = true; document.getElementById('loader').style.display = 'block';
+            if (isLoadingPoke) return; 
+            // Si no hay internet y no hay lista en cache, no hacer nada
+            if(!navigator.onLine && allPokemonList.length === 0) {
+                 document.getElementById('loader').innerHTML = "Sin conexión y sin datos guardados.";
+                 document.getElementById('loader').style.display = 'block';
+                 return;
+            }
+
+            isLoadingPoke = true; document.getElementById('loader').style.display = 'block';
             try {
-                const r = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limitPoke}&offset=${offsetPoke}`);
-                const d = await r.json();
-                const p = await Promise.all(d.results.map(x => fetch(x.url).then(y => y.json())));
+                let dataResults;
+                if (navigator.onLine) {
+                    const r = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limitPoke}&offset=${offsetPoke}`);
+                    const d = await r.json();
+                    dataResults = d.results;
+                } else {
+                    // Usar cache local si estamos offline
+                    dataResults = allPokemonList.slice(offsetPoke, offsetPoke + limitPoke);
+                }
+
+                if(dataResults.length === 0) {
+                     document.getElementById('loader').style.display = 'none';
+                     isLoadingPoke = false;
+                     return;
+                }
+
+                const p = await Promise.all(dataResults.map(x => fetch(x.url).then(y => y.json())));
                 p.forEach(createCard);
-            } catch (e) {} finally { isLoadingPoke = false; document.getElementById('loader').style.display = 'none'; }
+            } catch (e) { console.error(e); } finally { isLoadingPoke = false; document.getElementById('loader').style.display = 'none'; }
         }
+
         function createCard(p) {
             const div = document.createElement('div'); div.className = 'card';
             div.style.borderBottomColor = typeColors[p.types[0].type.name];
-            div.innerHTML = `<div class="card-img-container"><img src="${p.sprites.other['official-artwork'].front_default || p.sprites.front_default}" loading="lazy"></div><div class="card-name">${p.name}</div><div class="types">${p.types.map(t=>`<span class="type-badge" style="background:${typeColors[t.type.name]}">${t.type.name}</span>`).join('')}</div>`;
+            const imgSrc = p.sprites.other['official-artwork'].front_default || p.sprites.front_default;
+            div.innerHTML = `<div class="card-img-container"><img src="${imgSrc}" loading="lazy" onerror="handleImageError(this)"></div><div class="card-name">${p.name}</div><div class="types">${p.types.map(t=>`<span class="type-badge" style="background:${typeColors[t.type.name]}">${t.type.name}</span>`).join('')}</div>`;
             div.onclick = () => openModal(p);
             document.getElementById('pokedex-grid').appendChild(div);
         }
@@ -405,7 +546,9 @@
             document.getElementById('modal-id').innerText = p.id;
             document.getElementById('modal-height').innerText = p.height/10;
             document.getElementById('modal-weight').innerText = p.weight/10;
-            document.getElementById('modal-img').src = p.sprites.other['official-artwork'].front_default || p.sprites.front_default;
+            const imgSrc = p.sprites.other['official-artwork'].front_default || p.sprites.front_default;
+            const imgEl = document.getElementById('modal-img');
+            imgEl.src = imgSrc;
             document.getElementById('modal-left-bg').style.background = `linear-gradient(135deg, ${typeColors[p.types[0].type.name]}40, #fff)`;
             document.getElementById('modal-types').innerHTML = p.types.map(t=>`<span class="type-badge" style="background:${typeColors[t.type.name]};font-size:0.8rem;padding:4px 10px;">${t.type.name}</span>`).join('');
             const c = document.getElementById('modal-stats'); c.innerHTML = '';
@@ -415,45 +558,23 @@
             });
         }
 
-        // --- LÓGICA DE EVOLUCIÓN CLARA ---
         function getEvoPath(chain) {
             let path = [];
             let current = chain;
-            // Primer pokemon no tiene requisito
             path.push({ name: current.species.name, req: null });
-
             while (current.evolves_to && current.evolves_to.length > 0) {
-                // Tomamos la primera rama (ej. Charmander -> Charmeleon)
                 let nextEvo = current.evolves_to[0];
                 let details = nextEvo.evolution_details[0];
-                
                 let reqText = "Evoluciona";
-                
                 if (details) {
-                    if (details.min_level) {
-                        reqText = `Nivel ${details.min_level}`;
-                    } else if (details.item) {
+                    if (details.min_level) reqText = `Nivel ${details.min_level}`;
+                    else if (details.item) {
                         let itemName = details.item.name.replace(/-/g, ' ');
-                        // Formato "Piedra Fuego" en lugar de "fire stone"
-                        if(itemName.includes('stone')) {
-                            itemName = itemName.replace('stone', 'Piedra').trim();
-                        }
+                        if(itemName.includes('stone')) itemName = itemName.replace('stone', 'Piedra').trim();
                         reqText = itemName;
-                    } else if (details.trigger.name === 'trade') {
-                        reqText = "Intercambiar";
-                        if(details.held_item) {
-                            reqText += ` (${details.held_item.name.replace(/-/g, ' ')})`;
-                        }
-                    } else if (details.trigger.name === 'friendship') {
-                        reqText = "Amistad";
-                        if(details.time_of_day) {
-                            reqText += ` (${details.time_of_day === 'day' ? 'Día' : 'Noche'})`;
-                        }
-                    } else {
-                        reqText = details.trigger.name.replace(/-/g, ' ');
-                    }
+                    } else if (details.trigger.name === 'trade') reqText = "Intercambiar";
+                    else reqText = details.trigger.name.replace(/-/g, ' ');
                 }
-
                 path.push({ name: nextEvo.species.name, req: reqText });
                 current = nextEvo;
             }
@@ -464,77 +585,62 @@
             const pathData = getEvoPath(chain);
             const container = document.getElementById('evo-timeline');
             container.innerHTML = '';
-
-            // Fetchear datos de todos los pokemon de la cadena
             const promises = pathData.map(item => fetch(`https://pokeapi.co/api/v2/pokemon/${item.name}`).then(r => r.json()));
-            
             try {
                 const pokemons = await Promise.all(promises);
-
                 pokemons.forEach((p, index) => {
                     const isActive = p.name === currentName;
-                    const img = p.sprites.front_default;
-                    
-                    // Renderizar Paso Pokemon
                     const step = document.createElement('div');
                     step.className = `evo-step ${isActive ? 'active' : ''}`;
                     step.dataset.name = p.name;
                     step.onclick = () => switchPoke(p.name);
-                    step.innerHTML = `
-                        <img src="${img}" alt="${p.name}">
-                        <span>${p.name}</span>
-                    `;
+                    step.innerHTML = `<img src="${p.sprites.front_default}" onerror="handleImageError(this)" alt="${p.name}"><span>${p.name}</span>`;
                     container.appendChild(step);
 
-                    // Renderizar Conector y Requisito si no es el último
                     if (index < pokemons.length - 1) {
                         const connector = document.createElement('div');
                         connector.className = 'evo-connector';
-                        
-                        // El requisito viene del SIGUIENTE paso en el pathData
-                        const nextReq = pathData[index + 1].req;
-                        
-                        connector.innerHTML = `
-                            <div class="evo-req-text">${nextReq}</div>
-                            <div class="evo-arrow">➜</div>
-                        `;
+                        connector.innerHTML = `<div class="evo-req-text">${pathData[index + 1].req}</div><div class="evo-arrow">➜</div>`;
                         container.appendChild(connector);
                     }
                 });
-            } catch (e) {
-                container.innerHTML = "Error cargando evolución.";
-            }
+            } catch (e) { container.innerHTML = "Sin conexión para evoluciones."; }
         }
 
         function highlightEvo(name) { document.querySelectorAll('.evo-step').forEach(e => e.classList.toggle('active', e.dataset.name===name)); }
 
         // --- API OBJETOS ---
         async function fetchItems() {
-            if(isLoadingItems) return; isLoadingItems=true; document.getElementById('items-loader').style.display='block';
+            if(isLoadingItems) return;
+            if(!navigator.onLine && allItemsList.length === 0) {
+                 document.getElementById('items-loader').innerHTML = "Sin conexión.";
+                 document.getElementById('items-loader').style.display = 'block';
+                 return;
+            }
+
+            isLoadingItems=true; document.getElementById('items-loader').style.display='block';
             try {
-                const r = await fetch(`https://pokeapi.co/api/v2/item?limit=${limitItems}&offset=${offsetItems}`);
-                const d = await r.json();
-                d.results.forEach(i => {
-                    const div = document.createElement('div'); div.className='item-card';
-                    div.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${i.name}.png" class="item-icon" onerror="this.src='https://via.placeholder.com/60?text=?'"><div class="item-name">${i.name.replace(/-/g,' ')}</div>`;
+                let dResults;
+                if (navigator.onLine) {
+                    const r = await fetch(`https://pokeapi.co/api/v2/item?limit=${limitItems}&offset=${offsetItems}`);
+                    const d = await r.json();
+                    dResults = d.results;
+                } else {
+                    dResults = allItemsList.slice(offsetItems, offsetItems + limitItems);
+                }
+                
+                const grid = document.getElementById('items-grid');
+                dResults.forEach(i => {
+                    const div = document.createElement('div'); 
+                    div.className='item-card';
+                    const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${i.name}.png`;
+                    div.innerHTML = `<img src="${imgUrl}" class="item-icon" onerror="handleImageError(this)"><div class="item-name">${i.name.replace(/-/g,' ')}</div>`;
                     div.onclick = () => openItem(i.url);
-                    document.getElementById('items-grid').appendChild(div);
+                    grid.appendChild(div);
                 });
             } catch(e){} finally { isLoadingItems=false; document.getElementById('items-loader').style.display='none'; }
         }
-        async function searchItem(q) {
-            document.getElementById('items-grid').innerHTML=''; document.getElementById('items-loader').style.display='block';
-            try {
-                const r = await fetch(`https://pokeapi.co/api/v2/item/${q}`);
-                if(!r.ok) throw new Error();
-                const i = await r.json();
-                const div = document.createElement('div'); div.className='item-card';
-                div.innerHTML = `<img src="${i.sprites.default}" class="item-icon"><div class="item-name">${i.name.replace(/-/g,' ')}</div>`;
-                div.onclick = () => openItem(i.url);
-                document.getElementById('items-grid').appendChild(div);
-            } catch { document.getElementById('items-grid').innerHTML='No encontrado'; }
-            finally { document.getElementById('items-loader').style.display='none'; }
-        }
+
         async function openItem(url) {
             const m = document.getElementById('item-modal'); m.classList.add('show');
             document.getElementById('item-modal-name').innerText='Cargando...'; document.getElementById('holders-grid').innerHTML='';
@@ -550,7 +656,8 @@
                     i.held_by_pokemon.slice(0,20).forEach(x => {
                         const d = document.createElement('div'); d.className='holder-card';
                         const id = x.pokemon.url.split('/').filter(Boolean).pop();
-                        d.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png"><span>${x.pokemon.name}</span>`;
+                        const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+                        d.innerHTML = `<img src="${imgUrl}" onerror="handleImageError(this)"><span>${x.pokemon.name}</span>`;
                         d.onclick = () => { closeModal('item-modal'); document.querySelector('.tab-btn').click(); setTimeout(()=>searchPokemon(x.pokemon.name), 100); };
                         h.appendChild(d);
                     });
@@ -558,7 +665,57 @@
             } catch(e){}
         }
 
+        // --- DESCARGA OFFLINE ---
+        async function downloadOfflineData() {
+            const btn = document.getElementById('btn-download-offline');
+            const status = document.getElementById('offline-status');
+            
+            if(!navigator.onLine) {
+                alert("Necesitas conexión a internet para descargar los datos.");
+                return;
+            }
+
+            btn.disabled = true;
+            status.innerText = "Iniciando descarga...";
+            
+            try {
+                // Descargar Pokémon (Top 50)
+                status.innerText = "Descargando Pokémon (0/50)...";
+                for(let i=1; i<=50; i++) {
+                    const p = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`).then(r=>r.json());
+                    const img = p.sprites.other['official-artwork'].front_default;
+                    if(img) await saveImageToDB(img);
+                    status.innerText = `Descargando Pokémon (${i}/50)...`;
+                }
+
+                // Descargar Objetos (Top 50)
+                status.innerText = "Descargando Objetos (0/50)...";
+                const itemsRes = await fetch('https://pokeapi.co/api/v2/item?limit=50');
+                const itemsData = await itemsRes.json();
+                
+                for(let i=0; i<itemsData.results.length; i++) {
+                    const item = itemsData.results[i];
+                    const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
+                    await saveImageToDB(img);
+                    status.innerText = `Descargando Objetos (${i+1}/50)...`;
+                }
+
+                status.innerText = "¡Listo! Ahora puedes usar la app sin internet.";
+                status.style.color = "#4caf50";
+                btn.innerText = "✅ Guardado";
+            } catch (e) {
+                console.error(e);
+                status.innerText = "Error en la descarga.";
+                status.style.color = "#ff5252";
+                btn.disabled = false;
+            }
+        }
+
         // --- GENERAL ---
+        function searchPokemon(name) {
+            document.getElementById('search-input').value = name;
+            document.getElementById('search-input').dispatchEvent(new Event('input'));
+        }
         function closeModal(id) { document.getElementById(id).classList.remove('show'); }
         window.onclick = e => { if(e.target.classList.contains('modal')) closeModal(e.target.id); };
         document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal('modal'); closeModal('item-modal'); }});
