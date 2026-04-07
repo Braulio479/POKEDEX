@@ -197,7 +197,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         /* Sentinel para scroll infinito */
-        #scroll-sentinel { height: 20px; width: 100%; }
+        #scroll-sentinel, #scroll-sentinel-items { height: 20px; width: 100%; }
     </style>
 </head>
 <body>
@@ -247,7 +247,7 @@
         <div id="items-view" class="hidden">
             <div id="items-grid" class="grid-container"></div>
             <div id="items-loader"><div class="spinner"></div></div>
-            <div id="scroll-sentinel-items" style="height: 20px; width: 100%;"></div>
+            <div id="scroll-sentinel-items"></div>
         </div>
     </main>
 
@@ -314,17 +314,14 @@
         let currentEvoChainUrl = null;
         let allPokemonList = []; 
         let allItemsList = [];
+        let isSearching = false; // NUEVO: Flag para controlar el scroll
         let db;
 
         // --- TEMA Y MENÚ ---
         function initTheme() {
             const isDark = localStorage.getItem('theme') === 'dark';
             if (isDark) document.body.classList.add('dark-mode');
-            
-            // Verificar estado de descarga
-            if(localStorage.getItem('downloadComplete') === 'true') {
-                updateDownloadMenuUI(true);
-            }
+            if(localStorage.getItem('downloadComplete') === 'true') updateDownloadMenuUI(true);
         }
         
         function toggleTheme() {
@@ -341,8 +338,8 @@
             const badge = document.getElementById('download-badge');
             if(complete) {
                 btn.querySelector('span').innerText = "Archivos Completos";
-                badge.innerText = "👍"; // Logo de bien / pulgar arriba
-                btn.onclick = null; // Deshabilitar click
+                badge.innerText = "👍";
+                btn.onclick = null;
                 btn.style.cursor = 'default';
             }
         }
@@ -375,7 +372,7 @@
                 const blob = await response.blob();
                 const tx = db.transaction(STORE_NAME, 'readwrite');
                 tx.objectStore(STORE_NAME).put(blob, url);
-            } catch (e) { console.log("Error guardando img:", url); }
+            } catch (e) {}
         }
 
         async function getImageFromDB(url) {
@@ -395,7 +392,7 @@
             else imgElement.src = 'https://via.placeholder.com/150?text=?';
         }
 
-        // --- INICIO Y INFINITE SCROLL ---
+        // --- INICIO Y SCROLL ---
         document.addEventListener('DOMContentLoaded', async () => {
             initTheme();
             await initDB();
@@ -413,12 +410,14 @@
                     await fetchPokemons();
                 } catch (e) { loadFromCache(); }
             } else { loadFromCache(); }
-            
             setupIntersectionObserver();
         });
 
         function setupIntersectionObserver() {
             const observer = new IntersectionObserver((entries) => {
+                // SI ESTAMOS BUSCANDO, NO CARGAR MÁS (Evita mezclar resultados)
+                if(isSearching) return;
+
                 if(entries[0].isIntersecting) {
                     if(currentTab === 'pokemon' && !isLoadingPoke) fetchPokemons();
                     if(currentTab === 'items' && !isLoadingItems) fetchItems();
@@ -453,11 +452,18 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             const search = document.getElementById('search-input');
-            search.value = '';
+            search.value = ''; // Limpiar búsqueda al cambiar tab
+            
+            // Resetear estado de búsqueda
+            isSearching = false;
+            document.getElementById('scroll-sentinel').style.display = 'block';
+            document.getElementById('scroll-sentinel-items').style.display = 'block';
+
             if (tab === 'pokemon') {
                 document.getElementById('pokemon-view').classList.remove('hidden');
                 document.getElementById('items-view').classList.add('hidden');
                 search.placeholder = "Buscar (ej. 'char', 'a')...";
+                if (document.getElementById('pokedex-grid').children.length === 0) fetchPokemons();
             } else {
                 document.getElementById('pokemon-view').classList.add('hidden');
                 document.getElementById('items-view').classList.remove('hidden');
@@ -467,39 +473,87 @@
             }
         }
 
-        // --- BUSCADOR ---
+        // --- BUSCADOR CORREGIDO ---
         let searchTimeout;
         document.getElementById('search-input').addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
             const q = e.target.value.trim().toLowerCase();
             searchTimeout = setTimeout(() => {
+                const gridPoke = document.getElementById('pokedex-grid');
+                const gridItems = document.getElementById('items-grid');
+
+                // Si está vacío, restaurar vista normal
+                if (q === '') {
+                    isSearching = false;
+                    // Mostrar sentinels para scroll infinito
+                    document.getElementById('scroll-sentinel').style.display = 'block';
+                    document.getElementById('scroll-sentinel-items').style.display = 'block';
+
+                    if(currentTab === 'pokemon') {
+                        gridPoke.innerHTML = ''; offsetPoke = 0; fetchPokemons();
+                    } else {
+                        gridItems.innerHTML = ''; offsetItems = 0; fetchItems();
+                    }
+                    return;
+                }
+
+                // --- SI HAY BÚSQUEDA ---
+                isSearching = true;
+                // OCULTAR SENTINELS para que el scroll infinito no estorbe
+                document.getElementById('scroll-sentinel').style.display = 'none';
+                document.getElementById('scroll-sentinel-items').style.display = 'none';
+
                 if (currentTab === 'pokemon') {
-                    const grid = document.getElementById('pokedex-grid');
-                    if (q === '') { grid.innerHTML = ''; offsetPoke = 0; fetchPokemons(); return; }
-                    grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    gridPoke.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    
+                    // Verificar que la lista existe
+                    if(allPokemonList.length === 0) {
+                        gridPoke.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Cargando lista para buscar...</div>';
+                        return;
+                    }
+
+                    // FILTRADO REAL
                     const matches = allPokemonList.filter(p => p.name.includes(q));
-                    if (matches.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; return; }
-                    Promise.all(matches.slice(0, 50).map(p => fetch(p.url).then(r => r.json()))).then(results => { grid.innerHTML = ''; results.forEach(p => createCard(p)); });
-                } else {
-                    const grid = document.getElementById('items-grid');
-                    if (q === '') { grid.innerHTML = ''; offsetItems = 0; fetchItems(); return; }
-                    grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    
+                    if (matches.length === 0) { 
+                        gridPoke.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; 
+                        return; 
+                    }
+
+                    // Mostrar primeros 50 resultados
+                    Promise.all(matches.slice(0, 50).map(p => fetch(p.url).then(r => r.json()))).then(results => { 
+                        gridPoke.innerHTML = ''; 
+                        results.forEach(p => createCard(p)); 
+                    });
+                } 
+                else {
+                    gridItems.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    
+                    if(allItemsList.length === 0) {
+                        gridItems.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Cargando lista para buscar...</div>';
+                        return;
+                    }
+
                     const matches = allItemsList.filter(i => i.name.includes(q));
-                    if (matches.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; return; }
-                    grid.innerHTML = ''; 
+                    if (matches.length === 0) { 
+                        gridItems.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; 
+                        return; 
+                    }
+                    
+                    gridItems.innerHTML = ''; 
                     matches.slice(0, 50).forEach(item => {
                         const div = document.createElement('div'); div.className = 'item-card';
                         const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
                         div.innerHTML = `<img src="${imgUrl}" class="item-icon" onerror="handleImageError(this)"><div class="item-name">${item.name.replace(/-/g,' ')}</div>`;
-                        div.onclick = () => openItem(item.url); grid.appendChild(div);
+                        div.onclick = () => openItem(item.url); gridItems.appendChild(div);
                     });
                 }
             }, 400);
         });
 
-        // --- API POKÉMON (SIN BOTÓN, CON SCROLL) ---
+        // --- API POKÉMON ---
         async function fetchPokemons() {
-            if (isLoadingPoke) return; 
+            if (isLoadingPoke || isSearching) return; // Seguridad extra
             if(!navigator.onLine && allPokemonList.length === 0) {
                  document.getElementById('loader').innerHTML = "<p>Sin conexión y sin datos.</p>"; document.getElementById('loader').style.display = 'block'; return;
             }
@@ -510,7 +564,6 @@
                     const r = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limitPoke}&offset=${offsetPoke}`);
                     const d = await r.json(); dataResults = d.results;
                 } else { 
-                    // OFFLINE: Usar lista local
                     dataResults = allPokemonList.slice(offsetPoke, offsetPoke + limitPoke);
                 }
                 if(dataResults.length === 0) { isLoadingPoke = false; document.getElementById('loader').style.display = 'none'; return; }
@@ -604,9 +657,9 @@
         }
         function highlightEvo(name) { document.querySelectorAll('.evo-step').forEach(e => e.classList.toggle('active', e.dataset.name===name)); }
 
-        // --- API OBJETOS (SIN BOTÓN, CON SCROLL) ---
+        // --- API OBJETOS ---
         async function fetchItems() {
-            if(isLoadingItems) return;
+            if(isLoadingItems || isSearching) return;
             if(!navigator.onLine && allItemsList.length === 0) {
                  document.getElementById('items-loader').innerHTML = "<p>Sin conexión.</p>"; document.getElementById('items-loader').style.display = 'block'; return;
             }
@@ -617,7 +670,6 @@
                     const r = await fetch(`https://pokeapi.co/api/v2/item?limit=${limitItems}&offset=${offsetItems}`);
                     const d = await r.json(); dResults = d.results;
                 } else { 
-                    // OFFLINE: Usar lista local
                     dResults = allItemsList.slice(offsetItems, offsetItems + limitItems);
                 }
                 const grid = document.getElementById('items-grid');
@@ -655,7 +707,7 @@
             } catch(e){}
         }
 
-        // --- DESCARGA COMPLETA (CORREGIDA PARA POKEMON E ITEMS) ---
+        // --- DESCARGA COMPLETA ---
         async function startFullDownload() {
             closeMenu();
             if(!navigator.onLine) { alert("Necesitas internet para descargar."); return; }
@@ -669,13 +721,11 @@
             progressBar.style.width = "5%";
 
             try {
-                // 1. Listas
                 if(allPokemonList.length === 0) {
                     const r = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
                     allPokemonList = (await r.json()).results;
                     localStorage.setItem('allPokemonList', JSON.stringify(allPokemonList));
                 }
-                
                 if(allItemsList.length === 0) {
                     const r = await fetch('https://pokeapi.co/api/v2/item?limit=10000');
                     allItemsList = (await r.json()).results;
@@ -692,27 +742,23 @@
                     progressBar.style.width = `${pct}%`;
                 };
 
-                // 2. Descargar POKEMON (Corregido para asegurar que se descarguen)
                 progressText.innerText = `Descargando Pokémon (0/${totalPokes})...`;
-                for (let i = 0; i < totalPokes; i += 10) { // Lotes de 10 para ser más seguro
+                for (let i = 0; i < totalPokes; i += 10) {
                     const batch = allPokemonList.slice(i, i + 10);
                     const promises = batch.map(async (p) => {
                         try {
                             const data = await fetch(p.url).then(r => r.json());
-                            // Priorizar artwork de alta calidad, fallback al sprite normal
                             const img = data.sprites.other['official-artwork'].front_default || data.sprites.front_default;
                             if(img) await saveImageToDB(img);
-                        } catch(e){ console.error("Error poke", p.name); }
+                        } catch(e){}
                     });
                     await Promise.all(promises);
                     currentStep += batch.length;
                     updateProgress();
                     progressText.innerText = `Descargando Pokémon (${Math.min(currentStep, totalPokes)}/${totalPokes})...`;
-                    // Pequeña pausa
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                // 3. Descargar ITEMS
                 progressText.innerText = `Descargando Objetos (0/${totalItems})...`;
                 for (let i = 0; i < totalItems; i += 50) {
                     const batch = allItemsList.slice(i, i + 50);
@@ -727,7 +773,6 @@
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                // 4. Finalizar
                 localStorage.setItem('downloadComplete', 'true');
                 updateDownloadMenuUI(true);
                 progressText.innerText = "¡Descarga Completa!";
