@@ -13,7 +13,7 @@
     <title>Pokédex Ultimate</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* --- VARIABLES (TEMA CLARO POR DEFECTO) --- */
+        /* --- VARIABLES --- */
         :root {
             --bg-color: #f6f8fc;
             --card-bg: #ffffff;
@@ -22,8 +22,6 @@
             --input-bg: rgba(255,255,255,0.9);
             --modal-overlay: rgba(0, 0, 0, 0.9);
             --border-color: #eee;
-            
-            /* Tipos */
             --normal: #A8A77A; --fire: #EE8130; --water: '#6390F0';
             --electric: '#F7D02C'; --grass: '#7AC74C'; --ice: '#96D9D6';
             --fighting: '#C22E28'; --poison: '#A33EA1'; --ground: '#E2BF65';
@@ -32,7 +30,7 @@
             --dark: '#705746'; --steel: '#B7B7CE'; --fairy: '#D685AD';
         }
 
-        /* --- VARIABLES (TEMA OSCURO) --- */
+        /* --- MODO OSCURO --- */
         body.dark-mode {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
@@ -58,7 +56,7 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* --- HEADER & MENÚ --- */
+        /* --- HEADER --- */
         header {
             background: var(--header-bg);
             padding: 1rem 1rem 1rem 1rem; 
@@ -72,7 +70,7 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
 
-        /* Menú de 3 puntos */
+        /* Menú */
         .menu-container { position: relative; }
         .menu-btn {
             background: rgba(255,255,255,0.2); border: none; color: white;
@@ -81,7 +79,7 @@
         .menu-dropdown {
             display: none; position: absolute; right: 0; top: 110%;
             background: var(--card-bg); color: var(--text-primary);
-            min-width: 200px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-width: 220px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             border-radius: 8px; overflow: hidden; z-index: 200;
         }
         .menu-dropdown.show { display: block; animation: fadeIn 0.2s; }
@@ -89,19 +87,20 @@
             width: 100%; padding: 12px 15px; text-align: left; background: none; border: none;
             cursor: pointer; font-size: 0.9rem; font-family: inherit; color: inherit;
             border-bottom: 1px solid var(--border-color); transition: background 0.2s;
+            display: flex; align-items: center; justify-content: space-between;
         }
         .menu-item:hover { background: rgba(0,0,0,0.05); }
         .menu-item:last-child { border-bottom: none; }
+        .status-badge { color: #4caf50; font-weight: bold; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Barra de Progreso de Descarga */
+        /* Barra de Progreso */
         .download-progress-container { display: none; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 10px; text-align: center; }
         .progress-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; overflow: hidden; margin-top: 5px; }
         .progress-bar-fill { height: 100%; background: #4caf50; width: 0%; transition: width 0.3s; }
         .progress-text { font-size: 0.75rem; color: white; margin-bottom: 2px; }
 
-        /* Navegación de Pestañas */
         .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 1rem; }
         .tab-btn {
             background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4);
@@ -175,7 +174,6 @@
         body.dark-mode .evo-req-text { background: #3e2723; color: #ff8a80; border-color: #5d4037; }
         .evo-arrow { font-size: 1.2rem; font-weight: bold; }
 
-        /* Estadísticas */
         .stats-container { margin-top: 10px; flex-grow: 1; }
         .stat-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.8rem; }
         .stat-name { width: 80px; font-weight: 600; text-transform: uppercase; font-size: 0.65rem; }
@@ -183,7 +181,6 @@
         .stat-bar-bg { flex: 1; height: 6px; background-color: var(--border-color); border-radius: 3px; overflow: hidden; }
         .stat-bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.4s ease-out; }
 
-        /* Modal Items */
         #item-modal .modal-content { display: block; overflow-y: auto; height: 85vh; }
         #item-modal .modal-left { border-right: none; border-bottom: 1px solid var(--border-color); padding: 1rem; flex-direction: row; justify-content: flex-start; gap: 15px; }
         #item-modal .modal-left img { width: 80px; height: 80px; margin: 0; }
@@ -198,8 +195,9 @@
         #loader, #items-loader { display: none; text-align: center; margin: 2rem 0; }
         .spinner { width: 30px; height: 30px; border: 3px solid var(--border-color); border-top: 3px solid #ff0000; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .btn { background: #333; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; }
+        
+        /* Sentinel para scroll infinito */
+        #scroll-sentinel { height: 20px; width: 100%; }
     </style>
 </head>
 <body>
@@ -211,12 +209,14 @@
                 <button class="menu-btn" onclick="toggleMenu()">⋮</button>
                 <div id="dropdown" class="menu-dropdown">
                     <button class="menu-item" onclick="toggleTheme()">🌓 Modo Oscuro/Claro</button>
-                    <button class="menu-item" onclick="startFullDownload()">⬇️ Descargar Todo (Offline)</button>
+                    <button class="menu-item" id="btn-download-action" onclick="startFullDownload()">
+                        <span>⬇️ Descargar Todo (Offline)</span>
+                        <span id="download-badge" class="status-badge"></span>
+                    </button>
                 </div>
             </div>
         </div>
         
-        <!-- Barra de Progreso -->
         <div id="download-progress" class="download-progress-container">
             <div class="progress-text" id="progress-text">Preparando descarga...</div>
             <div class="progress-bar-bg">
@@ -238,19 +238,16 @@
         <!-- VISTA POKÉMON -->
         <div id="pokemon-view">
             <div id="pokedex-grid" class="grid-container"></div>
-            <div id="loader"><div class="spinner"></div><p style="margin-top:5px; font-size:0.8rem; color:inherit; opacity:0.7;">Cargando lista...</p></div>
-            <div id="load-more-container" style="text-align: center; margin: 2rem 0;">
-                <button id="load-more-btn" class="btn">Cargar más</button>
-            </div>
+            <div id="loader"><div class="spinner"></div><p style="margin-top:5px; font-size:0.8rem; color:inherit; opacity:0.7;">Cargando...</p></div>
+            <!-- Sentinela para Infinite Scroll -->
+            <div id="scroll-sentinel"></div>
         </div>
 
         <!-- VISTA OBJETOS -->
         <div id="items-view" class="hidden">
             <div id="items-grid" class="grid-container"></div>
             <div id="items-loader"><div class="spinner"></div></div>
-            <div id="load-more-items-container" style="text-align: center; margin: 2rem 0;">
-                <button id="load-more-items-btn" class="btn">Cargar más</button>
-            </div>
+            <div id="scroll-sentinel-items" style="height: 20px; width: 100%;"></div>
         </div>
     </main>
 
@@ -319,31 +316,40 @@
         let allItemsList = [];
         let db;
 
-        // --- TEMA OSCURO/CLARO ---
+        // --- TEMA Y MENÚ ---
         function initTheme() {
             const isDark = localStorage.getItem('theme') === 'dark';
             if (isDark) document.body.classList.add('dark-mode');
+            
+            // Verificar estado de descarga
+            if(localStorage.getItem('downloadComplete') === 'true') {
+                updateDownloadMenuUI(true);
+            }
         }
+        
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
             localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
             closeMenu();
         }
 
-        // --- MENÚ DESPLEGABLE ---
-        function toggleMenu() {
-            document.getElementById('dropdown').classList.toggle('show');
+        function toggleMenu() { document.getElementById('dropdown').classList.toggle('show'); }
+        function closeMenu() { document.getElementById('dropdown').classList.remove('show'); }
+        
+        function updateDownloadMenuUI(complete) {
+            const btn = document.getElementById('btn-download-action');
+            const badge = document.getElementById('download-badge');
+            if(complete) {
+                btn.querySelector('span').innerText = "Archivos Completos";
+                badge.innerText = "👍"; // Logo de bien / pulgar arriba
+                btn.onclick = null; // Deshabilitar click
+                btn.style.cursor = 'default';
+            }
         }
-        function closeMenu() {
-            document.getElementById('dropdown').classList.remove('show');
-        }
+
         window.onclick = function(event) {
-            if (!event.target.closest('.menu-container')) {
-                closeMenu();
-            }
-            if(event.target.classList.contains('modal')) {
-                closeModal(event.target.id);
-            }
+            if (!event.target.closest('.menu-container')) closeMenu();
+            if(event.target.classList.contains('modal')) closeModal(event.target.id);
         }
 
         // --- INDEXEDDB ---
@@ -389,7 +395,7 @@
             else imgElement.src = 'https://via.placeholder.com/150?text=?';
         }
 
-        // --- INICIO ---
+        // --- INICIO Y INFINITE SCROLL ---
         document.addEventListener('DOMContentLoaded', async () => {
             initTheme();
             await initDB();
@@ -407,7 +413,23 @@
                     await fetchPokemons();
                 } catch (e) { loadFromCache(); }
             } else { loadFromCache(); }
+            
+            setupIntersectionObserver();
         });
+
+        function setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                if(entries[0].isIntersecting) {
+                    if(currentTab === 'pokemon' && !isLoadingPoke) fetchPokemons();
+                    if(currentTab === 'items' && !isLoadingItems) fetchItems();
+                }
+            }, { rootMargin: '100px' });
+            
+            const sentinelPoke = document.getElementById('scroll-sentinel');
+            const sentinelItems = document.getElementById('scroll-sentinel-items');
+            if(sentinelPoke) observer.observe(sentinelPoke);
+            if(sentinelItems) observer.observe(sentinelItems);
+        }
 
         function loadFromCache() {
             const cachedPoke = localStorage.getItem('allPokemonList');
@@ -425,9 +447,6 @@
                 localStorage.setItem('allItemsList', JSON.stringify(allItemsList));
             } catch(e) {}
         }
-        
-        document.getElementById('load-more-btn').addEventListener('click', () => { offsetPoke += limitPoke; fetchPokemons(); });
-        document.getElementById('load-more-items-btn').addEventListener('click', () => { offsetItems += limitItems; fetchItems(); });
 
         function switchTab(tab) {
             currentTab = tab;
@@ -456,21 +475,19 @@
             searchTimeout = setTimeout(() => {
                 if (currentTab === 'pokemon') {
                     const grid = document.getElementById('pokedex-grid');
-                    const loadMore = document.getElementById('load-more-container');
-                    if (q === '') { loadMore.classList.remove('hidden'); grid.innerHTML = ''; offsetPoke = 0; fetchPokemons(); return; }
-                    loadMore.classList.add('hidden'); grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    if (q === '') { grid.innerHTML = ''; offsetPoke = 0; fetchPokemons(); return; }
+                    grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
                     const matches = allPokemonList.filter(p => p.name.includes(q));
                     if (matches.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; return; }
-                    Promise.all(matches.slice(0, 12).map(p => fetch(p.url).then(r => r.json()))).then(results => { grid.innerHTML = ''; results.forEach(p => createCard(p)); });
+                    Promise.all(matches.slice(0, 50).map(p => fetch(p.url).then(r => r.json()))).then(results => { grid.innerHTML = ''; results.forEach(p => createCard(p)); });
                 } else {
                     const grid = document.getElementById('items-grid');
-                    const loadMore = document.getElementById('load-more-items-container');
-                    if (q === '') { loadMore.classList.remove('hidden'); grid.innerHTML = ''; offsetItems = 0; fetchItems(); return; }
-                    loadMore.classList.add('hidden'); grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
+                    if (q === '') { grid.innerHTML = ''; offsetItems = 0; fetchItems(); return; }
+                    grid.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
                     const matches = allItemsList.filter(i => i.name.includes(q));
                     if (matches.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; opacity:0.6; padding:2rem;">No encontrado.</div>'; return; }
                     grid.innerHTML = ''; 
-                    matches.slice(0, 20).forEach(item => {
+                    matches.slice(0, 50).forEach(item => {
                         const div = document.createElement('div'); div.className = 'item-card';
                         const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
                         div.innerHTML = `<img src="${imgUrl}" class="item-icon" onerror="handleImageError(this)"><div class="item-name">${item.name.replace(/-/g,' ')}</div>`;
@@ -480,7 +497,7 @@
             }, 400);
         });
 
-        // --- API POKÉMON ---
+        // --- API POKÉMON (SIN BOTÓN, CON SCROLL) ---
         async function fetchPokemons() {
             if (isLoadingPoke) return; 
             if(!navigator.onLine && allPokemonList.length === 0) {
@@ -492,10 +509,15 @@
                 if (navigator.onLine) {
                     const r = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limitPoke}&offset=${offsetPoke}`);
                     const d = await r.json(); dataResults = d.results;
-                } else { dataResults = allPokemonList.slice(offsetPoke, offsetPoke + limitPoke); }
+                } else { 
+                    // OFFLINE: Usar lista local
+                    dataResults = allPokemonList.slice(offsetPoke, offsetPoke + limitPoke);
+                }
                 if(dataResults.length === 0) { isLoadingPoke = false; document.getElementById('loader').style.display = 'none'; return; }
+                
                 const p = await Promise.all(dataResults.map(x => fetch(x.url).then(y => y.json())));
                 p.forEach(createCard);
+                offsetPoke += limitPoke;
             } catch (e) {} finally { isLoadingPoke = false; document.getElementById('loader').style.display = 'none'; }
         }
 
@@ -582,7 +604,7 @@
         }
         function highlightEvo(name) { document.querySelectorAll('.evo-step').forEach(e => e.classList.toggle('active', e.dataset.name===name)); }
 
-        // --- API OBJETOS ---
+        // --- API OBJETOS (SIN BOTÓN, CON SCROLL) ---
         async function fetchItems() {
             if(isLoadingItems) return;
             if(!navigator.onLine && allItemsList.length === 0) {
@@ -594,7 +616,10 @@
                 if (navigator.onLine) {
                     const r = await fetch(`https://pokeapi.co/api/v2/item?limit=${limitItems}&offset=${offsetItems}`);
                     const d = await r.json(); dResults = d.results;
-                } else { dResults = allItemsList.slice(offsetItems, offsetItems + limitItems); }
+                } else { 
+                    // OFFLINE: Usar lista local
+                    dResults = allItemsList.slice(offsetItems, offsetItems + limitItems);
+                }
                 const grid = document.getElementById('items-grid');
                 dResults.forEach(i => {
                     const div = document.createElement('div'); div.className='item-card';
@@ -602,6 +627,7 @@
                     div.innerHTML = `<img src="${imgUrl}" class="item-icon" onerror="handleImageError(this)"><div class="item-name">${i.name.replace(/-/g,' ')}</div>`;
                     div.onclick = () => openItem(i.url); grid.appendChild(div);
                 });
+                offsetItems += limitItems;
             } catch(e){} finally { isLoadingItems=false; document.getElementById('items-loader').style.display='none'; }
         }
 
@@ -629,7 +655,7 @@
             } catch(e){}
         }
 
-        // --- DESCARGA COMPLETA CON BARRA DE PROGRESO ---
+        // --- DESCARGA COMPLETA (CORREGIDA PARA POKEMON E ITEMS) ---
         async function startFullDownload() {
             closeMenu();
             if(!navigator.onLine) { alert("Necesitas internet para descargar."); return; }
@@ -639,11 +665,11 @@
             const progressText = document.getElementById('progress-text');
             
             progressContainer.style.display = 'block';
-            progressText.innerText = "Obteniendo lista completa...";
+            progressText.innerText = "Obteniendo listas completas...";
             progressBar.style.width = "5%";
 
             try {
-                // 1. Obtener listas completas si no están
+                // 1. Listas
                 if(allPokemonList.length === 0) {
                     const r = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
                     allPokemonList = (await r.json()).results;
@@ -666,26 +692,27 @@
                     progressBar.style.width = `${pct}%`;
                 };
 
-                // 2. Descargar Imágenes Pokemon (En lotes de 20 para no colapsar)
+                // 2. Descargar POKEMON (Corregido para asegurar que se descarguen)
                 progressText.innerText = `Descargando Pokémon (0/${totalPokes})...`;
-                for (let i = 0; i < totalPokes; i += 20) {
-                    const batch = allPokemonList.slice(i, i + 20);
+                for (let i = 0; i < totalPokes; i += 10) { // Lotes de 10 para ser más seguro
+                    const batch = allPokemonList.slice(i, i + 10);
                     const promises = batch.map(async (p) => {
                         try {
                             const data = await fetch(p.url).then(r => r.json());
+                            // Priorizar artwork de alta calidad, fallback al sprite normal
                             const img = data.sprites.other['official-artwork'].front_default || data.sprites.front_default;
                             if(img) await saveImageToDB(img);
-                        } catch(e){}
+                        } catch(e){ console.error("Error poke", p.name); }
                     });
                     await Promise.all(promises);
                     currentStep += batch.length;
                     updateProgress();
                     progressText.innerText = `Descargando Pokémon (${Math.min(currentStep, totalPokes)}/${totalPokes})...`;
-                    // Pequeña pausa para no saturar
-                    await new Promise(r => setTimeout(r, 100));
+                    // Pequeña pausa
+                    await new Promise(r => setTimeout(r, 50));
                 }
 
-                // 3. Descargar Imágenes Items (En lotes de 50)
+                // 3. Descargar ITEMS
                 progressText.innerText = `Descargando Objetos (0/${totalItems})...`;
                 for (let i = 0; i < totalItems; i += 50) {
                     const batch = allItemsList.slice(i, i + 50);
@@ -697,12 +724,15 @@
                     currentStep += batch.length;
                     updateProgress();
                     progressText.innerText = `Descargando Objetos (${Math.min(currentStep - totalPokes, totalItems)}/${totalItems})...`;
-                    await new Promise(r => setTimeout(r, 100));
+                    await new Promise(r => setTimeout(r, 50));
                 }
 
+                // 4. Finalizar
+                localStorage.setItem('downloadComplete', 'true');
+                updateDownloadMenuUI(true);
                 progressText.innerText = "¡Descarga Completa!";
                 progressBar.style.background = "#4caf50";
-                setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.width = "0%"; progressBar.style.background = "#4caf50"; }, 3000);
+                setTimeout(() => { progressContainer.style.display = 'none'; }, 3000);
 
             } catch (e) {
                 console.error(e);
