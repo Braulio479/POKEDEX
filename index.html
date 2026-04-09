@@ -2,13 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POKEDEX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POKEDEX RÁPIDA</title>
     <style>
         /* --- VARIABLES CSS & TEMAS --- */
         :root {
-            --primary-color: #ff3e3e; /* Rojo intenso */
-            --secondary-color: #3b4cca; /* Azul */
+            --primary-color: #ff3e3e;
+            --secondary-color: #3b4cca;
             --bg-color: #f4f6f8;
             --card-bg: #ffffff;
             --text-color: #2c3e50;
@@ -17,6 +17,7 @@
             --shadow: 0 4px 6px rgba(0,0,0,0.08);
             --header-bg: #ff3e3e;
             --dropdown-bg: #ffffff;
+            --header-height: 60px;
         }
 
         body.dark-mode {
@@ -29,7 +30,7 @@
         }
 
         /* --- ESTILOS GENERALES --- */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
             background-color: var(--bg-color);
@@ -38,16 +39,17 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding-bottom: 80px;
         }
 
         /* --- HEADER --- */
         header {
             background-color: var(--header-bg);
-            padding: 0 20px;
-            height: 70px;
+            height: var(--header-height);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 10px;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -56,32 +58,34 @@
 
         .logo {
             color: white;
-            font-size: 1.5rem;
+            font-size: 1rem;
             font-weight: 900;
-            letter-spacing: 1px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-            min-width: 120px;
+            white-space: nowrap;
+            padding-left: 5px;
         }
 
-        /* Contenedor central para las pestañas */
         .tabs-container {
             flex: 1;
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 5px;
+            margin: 0 5px;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
             background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0);
+            border: none;
             color: white;
-            padding: 8px 24px;
-            border-radius: 25px;
+            padding: 5px 10px;
+            border-radius: 15px;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
+            white-space: nowrap;
         }
 
         .tab-btn:hover { background: rgba(255,255,255,0.3); }
@@ -91,139 +95,98 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* --- MENÚ DESPLEGABLE DE CONFIGURACIÓN --- */
-        .settings-wrapper {
-            position: relative;
-            min-width: 50px;
-            display: flex;
-            justify-content: flex-end;
-        }
-
+        /* --- SETTINGS --- */
+        .settings-wrapper { position: relative; min-width: 35px; display: flex; justify-content: flex-end; }
         .settings-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+            font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
         }
-        .settings-btn:hover { background: rgba(255,255,255,0.4); transform: rotate(90deg); }
+        .settings-btn:hover { background: rgba(255,255,255,0.4); }
 
         .dropdown-menu {
-            position: absolute;
-            top: 55px;
-            right: 0;
-            background-color: var(--dropdown-bg);
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 200px;
-            padding: 10px 0;
-            display: none; 
-            flex-direction: column;
-            overflow: hidden;
-            animation: fadeIn 0.2s ease;
+            position: absolute; top: 45px; right: 0;
+            background-color: var(--dropdown-bg); border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 160px;
+            padding: 5px 0; display: none; flex-direction: column;
+            overflow: hidden; animation: fadeIn 0.2s ease;
         }
-
         .dropdown-menu.show { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .dropdown-item {
-            background: none;
-            border: none;
-            width: 100%;
-            padding: 12px 20px;
-            text-align: left;
-            color: var(--text-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.95rem;
+            background: none; border: none; width: 100%; padding: 10px 15px;
+            text-align: left; color: var(--text-color); cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-size: 0.85rem;
         }
         .dropdown-item:hover { background-color: rgba(0,0,0,0.05); }
-        body.dark-mode .dropdown-item:hover { background-color: rgba(255,255,255,0.1); }
 
-        /* --- BARRA DE BÚSQUEDA --- */
+        /* --- SEARCH STICKY --- */
         .search-section {
-            padding: 20px 20px 0 20px;
-            max-width: 700px;
-            margin: 0 auto;
-            width: 100%;
+            position: sticky;
+            top: var(--header-height);
+            z-index: 90;
+            background-color: var(--bg-color);
+            padding: 15px 15px 10px 15px;
+            max-width: 100%;
+            box-shadow: 0 4px 6px -6px rgba(0,0,0,0.1);
         }
 
         .search-input {
             width: 100%;
-            padding: 15px 25px;
-            border-radius: 30px;
+            padding: 12px 20px;
+            border-radius: 25px;
             border: 2px solid transparent;
             background-color: var(--card-bg);
             color: var(--text-color);
-            font-size: 1rem;
+            font-size: 0.95rem;
             box-shadow: var(--shadow);
             outline: none;
             transition: 0.3s;
         }
         .search-input:focus { border-color: var(--secondary-color); }
 
-        /* --- GRID PRINCIPAL --- */
+        /* --- GRID --- */
         main {
             flex: 1;
-            padding: 20px;
+            padding: 10px;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
-            display: flex;
-            flex-direction: column;
         }
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
         }
 
-        /* Tarjeta Pokémon */
         .card {
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
-            padding: 15px;
+            padding: 10px;
             text-align: center;
             box-shadow: var(--shadow);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
             position: relative;
             border: 1px solid transparent;
         }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        .card:hover { transform: translateY(-3px); }
 
         .gen-badge {
-            position: absolute;
-            top: 8px; left: 8px;
-            background: rgba(0,0,0,0.1);
-            color: var(--text-secondary);
-            font-size: 0.65rem;
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-weight: 700;
+            position: absolute; top: 5px; left: 5px;
+            background: rgba(0,0,0,0.1); color: var(--text-secondary);
+            font-size: 0.55rem; padding: 2px 4px; border-radius: 4px; font-weight: 700;
         }
         .poke-id {
-            position: absolute;
-            top: 8px; right: 8px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
+            position: absolute; top: 5px; right: 5px;
+            font-weight: 700; color: var(--text-secondary); font-size: 0.7rem;
         }
-        .card img { width: 90px; height: 90px; object-fit: contain; margin-top: 15px; }
-        .poke-name { text-transform: capitalize; font-weight: 700; margin: 10px 0 5px; font-size: 1rem; }
-        .type-pill { padding: 3px 8px; border-radius: 10px; font-size: 0.65rem; color: white; text-transform: capitalize; display: inline-block; }
+        .card img { width: 75px; height: 75px; object-fit: contain; margin-top: 10px; }
+        .poke-name { text-transform: capitalize; font-weight: 700; margin: 8px 0 4px; font-size: 0.9rem; }
+        .type-pill { padding: 2px 5px; border-radius: 6px; font-size: 0.55rem; color: white; text-transform: capitalize; display: inline-block; margin: 1px; }
 
-        /* Tarjeta Objeto */
         .item-card {
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
@@ -234,107 +197,100 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            height: 140px;
         }
-        .item-img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; }
-        .item-name { text-transform: capitalize; font-weight: 600; font-size: 0.85rem; }
+        .item-img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
+        .item-name { text-transform: capitalize; font-weight: 600; font-size: 0.8rem; line-height: 1.2; }
+        .item-cat { font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; }
 
-        /* Loader y Sentinel (Infinite Scroll) */
-        .loading-area {
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-            width: 100%;
+        /* --- MODAL TIPOS --- */
+        .modal-types {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;
+            padding: 20px; backdrop-filter: blur(5px);
         }
-        .loader { 
-            border: 3px solid rgba(255,255,255,0.3); 
-            border-top: 3px solid var(--secondary-color); 
-            border-radius: 50%; 
-            width: 30px; height: 30px; 
-            animation: spin 1s linear infinite; 
+        .modal-types.active { display: flex; }
+        .types-grid-content {
+            background: var(--card-bg); width: 100%; max-width: 500px;
+            border-radius: 20px; padding: 20px; max-height: 80vh; overflow-y: auto;
+            animation: slideUp 0.3s ease;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hidden { display: none !important; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .types-title { text-align: center; font-size: 1.5rem; margin-bottom: 20px; color: var(--text-color); }
+        .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .type-btn { padding: 12px; border-radius: 10px; border: none; color: white; font-weight: bold; cursor: pointer; text-transform: capitalize; font-size: 0.85rem; }
 
-        /* --- MODAL --- */
+        /* --- MODAL DETALLES --- */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            backdrop-filter: blur(5px);
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center;
+            padding: 20px; backdrop-filter: blur(5px);
         }
         .modal.active { display: flex; }
-        
         .modal-content {
-            background: var(--card-bg);
-            width: 100%;
-            max-width: 450px;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
+            background: var(--card-bg); width: 100%; max-width: 400px;
+            border-radius: 20px; overflow: hidden; position: relative;
+            max-height: 90vh; overflow-y: auto;
             animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .modal-header {
-            padding: 30px 20px;
-            text-align: center;
-            color: white;
-            position: relative;
-        }
+        .modal-header { padding: 25px 15px; text-align: center; color: white; position: relative; }
         .close-modal {
-            position: absolute; top: 15px; right: 15px;
-            background: rgba(255,255,255,0.3); border: none;
-            color: white; width: 32px; height: 32px; border-radius: 50%;
-            cursor: pointer; font-size: 1.2rem; font-weight: bold;
+            position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.3);
+            border: none; color: white; width: 30px; height: 30px; border-radius: 50%;
+            cursor: pointer; font-size: 1.2rem; font-weight: bold; z-index: 10;
         }
-        .modal-img { width: 140px; height: 140px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }
-        
-        .modal-body { padding: 20px; }
-        
+        .modal-img { width: 120px; height: 120px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }
+        .modal-body { padding: 15px; }
         .section-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-            margin-top: 20px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            padding-bottom: 5px;
-            font-weight: 700;
+            font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary);
+            margin-bottom: 8px; margin-top: 15px; border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 5px; font-weight: 700;
         }
-
-        .stat-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 0.85rem; }
-        .stat-label { width: 70px; font-weight: bold; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; }
-        .stat-val { width: 30px; text-align: right; margin-right: 10px; font-weight: bold; }
+        .stat-row { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.8rem; }
+        .stat-label { width: 60px; font-weight: bold; color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; }
+        .stat-val { width: 25px; text-align: right; margin-right: 8px; font-weight: bold; }
         .stat-bar-bg { flex: 1; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
         .stat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease-out; }
-
-        .evo-container { display: flex; flex-direction: column; gap: 10px; }
-        .evo-stage { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.03); padding: 8px; border-radius: 10px; }
-        .evo-img { width: 50px; height: 50px; }
+        .evo-container { display: flex; flex-direction: column; gap: 8px; }
+        .evo-stage { 
+            display: flex; align-items: center; gap: 8px; 
+            background: rgba(0,0,0,0.03); padding: 8px; border-radius: 8px;
+            cursor: pointer; transition: background 0.2s; border: 1px solid transparent;
+        }
+        .evo-stage:hover { background: rgba(0,0,0,0.08); border-color: var(--secondary-color); }
+        .evo-img { width: 45px; height: 45px; }
         .evo-info { flex: 1; }
-        .evo-name { text-transform: capitalize; font-weight: bold; font-size: 0.9rem; }
-        .evo-method { font-size: 0.75rem; color: var(--secondary-color); margin-top: 2px; font-weight: 600; }
+        .evo-name { text-transform: capitalize; font-weight: bold; font-size: 0.85rem; }
+        .evo-method { font-size: 0.7rem; color: var(--secondary-color); margin-top: 2px; font-weight: 600; }
+        .evo-hint { font-size: 0.6rem; color: var(--text-secondary); opacity: 0.7; }
 
+        /* LOADING */
+        .loading-area { display: flex; justify-content: center; padding: 20px; width: 100%; }
+        .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid var(--secondary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+
+        @media (max-width: 480px) {
+            :root { --header-height: 110px; }
+            header { height: auto; flex-wrap: wrap; padding: 10px; align-content: flex-start; }
+            .logo { width: 100%; text-align: center; margin-bottom: 5px; font-size: 1.2rem; }
+            .tabs-container { width: 100%; justify-content: space-around; margin: 0; }
+            .settings-wrapper { position: absolute; top: 15px; right: 10px; }
+            .grid-container { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
     <div class="logo">POKEDEX</div>
-
     <div class="tabs-container">
         <button class="tab-btn active" onclick="switchTab('pokemon')">Pokémon</button>
         <button class="tab-btn" onclick="switchTab('items')">Objetos</button>
+        <button class="tab-btn" onclick="openTypeModal()">Elementos</button>
     </div>
-
     <div class="settings-wrapper">
         <button class="settings-btn" id="settings-toggle">⚙️</button>
         <div class="dropdown-menu" id="settings-menu">
@@ -344,22 +300,25 @@
     </div>
 </header>
 
-<!-- SEARCH -->
 <div class="search-section">
-    <input type="text" class="search-input" id="search-input" placeholder="Buscar por nombre, número o tipo...">
+    <input type="text" class="search-input" id="search-input" placeholder="Buscar...">
 </div>
 
-<!-- MAIN CONTENT -->
 <main>
     <div id="grid" class="grid-container"></div>
-    
-    <!-- Elemento Sentinel para detectar fin de scroll -->
     <div id="sentinel" class="loading-area">
         <div id="loader" class="loader"></div>
     </div>
 </main>
 
-<!-- MODAL DETALLES -->
+<div id="type-modal" class="modal-types">
+    <div class="types-grid-content">
+        <h2 class="types-title">Filtrar por Elemento</h2>
+        <div class="type-grid" id="type-grid-buttons"></div>
+        <button class="tab-btn" style="width:100%; margin-top:20px; background:#e74c3c; color:white;" onclick="closeTypeModal()">Cerrar</button>
+    </div>
+</div>
+
 <div id="modal" class="modal">
     <div class="modal-content">
         <div class="modal-header" id="modal-header">
@@ -372,7 +331,10 @@
             <div class="section-title">Estadísticas Base</div>
             <div id="modal-stats"></div>
             
-            <div class="section-title">Cadena Evolutiva</div>
+            <div class="section-title">
+                Evoluciones 
+                <span style="font-size:0.6rem; font-weight:400; margin-left:5px;">(Toca para ver)</span>
+            </div>
             <div id="modal-evos" class="evo-container"></div>
         </div>
     </div>
@@ -382,11 +344,14 @@
     // --- CONFIGURACIÓN ---
     const API_BASE = 'https://pokeapi.co/api/v2';
     let currentTab = 'pokemon';
+    let currentTypeFilter = null;
+    let filteredList = [];
     let offset = 0;
-    const limit = 50;
-    let allDataCache = []; 
-    let totalItems = 0; // Para saber cuándo parar el infinite scroll
-    let isLoading = false; // Evitar múltiples cargas simultáneas
+    // CAMBIO: Aumentado de 30 a 60 para cargar el doble rápido
+    const limit = 60; 
+    let allMasterList = [];
+    let totalItems = 0;
+    let isLoading = false;
     
     const COLORS = {
         normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C',
@@ -402,84 +367,106 @@
         sentinel: document.getElementById('sentinel'),
         search: document.getElementById('search-input'),
         modal: document.getElementById('modal'),
+        typeModal: document.getElementById('type-modal'),
+        typeGrid: document.getElementById('type-grid-buttons'),
         settingsToggle: document.getElementById('settings-toggle'),
         settingsMenu: document.getElementById('settings-menu'),
         themeBtn: document.getElementById('theme-btn'),
         offlineBtn: document.getElementById('offline-btn')
     };
 
-    // --- INTERSECTION OBSERVER (SCROLL INFINITO) ---
+    // CAMBIO: Aumentado rootMargin a 300px para cargar antes de llegar al final
     const observer = new IntersectionObserver((entries) => {
-        // Si el sentinel es visible Y no estamos buscando Y no estamos cargando Y hay más datos
-        if (entries[0].isIntersecting && !isLoading && offset < totalItems && DOM.search.value === '') {
+        if (entries[0].isIntersecting && !isLoading && DOM.search.value === '') {
             loadMoreData();
         }
-    }, { rootMargin: '100px' }); // Comienza a cargar 100px antes del final
+    }, { rootMargin: '300px' }); // Precarga a 300px de distancia
 
-    // --- INICIALIZACIÓN ---
     document.addEventListener('DOMContentLoaded', () => {
         initTheme();
+        generateTypeButtons();
         loadMasterList();
         
-        // Event Listeners
         DOM.search.addEventListener('input', handleSearch);
         
-        // Menú Desplegable
         DOM.settingsToggle.addEventListener('click', (e) => {
             e.stopPropagation();
             DOM.settingsMenu.classList.toggle('show');
         });
-        
         document.addEventListener('click', () => DOM.settingsMenu.classList.remove('show'));
         DOM.settingsMenu.addEventListener('click', (e) => e.stopPropagation());
-
+        
         DOM.themeBtn.addEventListener('click', toggleTheme);
         DOM.offlineBtn.addEventListener('click', saveOffline);
         DOM.modal.addEventListener('click', (e) => { if(e.target === DOM.modal) closeModal(); });
+        DOM.typeModal.addEventListener('click', (e) => { if(e.target === DOM.typeModal) closeTypeModal(); });
     });
 
-    // --- TEMA ---
-    function initTheme() {
-        const dark = localStorage.getItem('theme') === 'dark';
-        if (dark) {
-            document.body.classList.add('dark-mode');
-            DOM.themeBtn.innerHTML = '☀️ Modo Claro';
-        }
+    // --- LÓGICA DE TIPOS ---
+    function generateTypeButtons() {
+        Object.keys(COLORS).forEach(type => {
+            const btn = document.createElement('button');
+            btn.className = 'type-btn';
+            btn.style.backgroundColor = COLORS[type];
+            btn.textContent = type;
+            btn.onclick = () => filterByType(type);
+            DOM.typeGrid.appendChild(btn);
+        });
     }
+    function openTypeModal() { DOM.typeModal.classList.add('active'); }
+    function closeTypeModal() { DOM.typeModal.classList.remove('active'); }
 
-    function toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        DOM.themeBtn.innerHTML = isDark ? '☀️ Modo Claro' : '🌙 Modo Oscuro';
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
-
-    // --- NAVEGACIÓN Y DATOS ---
-    function switchTab(tab) {
-        currentTab = tab;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
+    async function filterByType(typeName) {
+        closeTypeModal();
+        switchTab('pokemon');
         DOM.grid.innerHTML = '';
         offset = 0;
-        totalItems = 0;
+        currentTypeFilter = typeName;
         
-        // Reiniciar observer
-        observer.unobserve(DOM.sentinel);
+        try {
+            DOM.loader.classList.remove('hidden');
+            const res = await fetch(`${API_BASE}/type/${typeName}`);
+            const data = await res.json();
+            filteredList = data.pokemon;
+            totalItems = filteredList.length;
+            observer.observe(DOM.sentinel);
+            loadMoreData();
+        } catch(e) { console.error(e); }
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        currentTypeFilter = null;
+        filteredList = [];
+        DOM.search.value = '';
+        DOM.grid.innerHTML = '';
+        offset = 0;
         
-        if (currentTab === 'pokemon') {
-            loadMasterList(); // Recargar lista maestra si es necesario
-        } else {
-            totalItems = 9999; // No hay límite claro en items sin fetch previo
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const btns = document.querySelectorAll('.tab-btn');
+        if(tab === 'pokemon') btns[0].classList.add('active');
+        if(tab === 'items') btns[1].classList.add('active');
+        
+        if (tab === 'pokemon') {
+            if (allMasterList.length > 0) {
+                totalItems = allMasterList.length;
+                observer.observe(DOM.sentinel);
+                loadMoreData();
+            } else {
+                loadMasterList();
+            }
+        } else if (tab === 'items') {
+            totalItems = 9999;
             observer.observe(DOM.sentinel);
             loadMoreData();
         }
     }
 
     async function loadMasterList() {
-        const cached = localStorage.getItem('pokedex_master_list_full');
+        const cached = localStorage.getItem('pokedex_master_fast');
         if (cached) {
             const data = JSON.parse(cached);
-            allDataCache = data.results;
+            allMasterList = data.results;
             totalItems = data.count;
             observer.observe(DOM.sentinel);
             loadMoreData();
@@ -487,9 +474,9 @@
             try {
                 const res = await fetch(`${API_BASE}/pokemon?limit=10000`);
                 const data = await res.json();
-                allDataCache = data.results;
+                allMasterList = data.results;
                 totalItems = data.count;
-                localStorage.setItem('pokedex_master_list_full', JSON.stringify(data));
+                localStorage.setItem('pokedex_master_fast', JSON.stringify(data));
                 observer.observe(DOM.sentinel);
                 loadMoreData();
             } catch (e) { console.error(e); }
@@ -503,7 +490,13 @@
 
         try {
             if (currentTab === 'pokemon') {
-                const batch = allDataCache.slice(offset, offset + limit);
+                let batch = [];
+                if (currentTypeFilter) {
+                    batch = filteredList.slice(offset, offset + limit).map(p => p.pokemon);
+                } else {
+                    batch = allMasterList.slice(offset, offset + limit);
+                }
+
                 if (batch.length === 0) {
                     isLoading = false;
                     DOM.loader.classList.add('hidden');
@@ -514,7 +507,8 @@
                 const results = await Promise.all(promises);
                 results.forEach(renderPokemonCard);
                 offset += limit;
-            } else {
+
+            } else if (currentTab === 'items') {
                 const res = await fetch(`${API_BASE}/item?offset=${offset}&limit=${limit}`);
                 const data = await res.json();
                 if (data.results.length === 0) {
@@ -531,13 +525,10 @@
             console.error("Error cargando datos", e);
         } finally {
             isLoading = false;
-            if (offset >= totalItems && currentTab === 'pokemon') {
-                DOM.loader.classList.add('hidden'); // Ocultar loader si terminó
-            }
+            if (offset >= totalItems && currentTab === 'pokemon') DOM.loader.classList.add('hidden');
         }
     }
 
-    // --- RENDERIZADO ---
     function getGen(id) {
         if (id <= 151) return "Gen 1";
         if (id <= 251) return "Gen 2";
@@ -559,7 +550,7 @@
         card.innerHTML = `
             <div class="gen-badge">${gen}</div>
             <div class="poke-id">#${poke.id.toString().padStart(4, '0')}</div>
-            <img src="${poke.sprites.front_default}" alt="${poke.name}">
+            <img src="${poke.sprites.front_default}" alt="${poke.name}" loading="lazy">
             <div class="poke-name">${poke.name}</div>
             <div class="poke-types">
                 ${poke.types.map(t => `<span class="type-pill" style="background:${COLORS[t.type.name]}">${t.type.name}</span>`).join('')}
@@ -576,20 +567,16 @@
         card.innerHTML = `
             <img src="${img}" class="item-img">
             <div class="item-name">${item.name.replace(/-/g, ' ')}</div>
-            <div style="font-size:0.7rem; color:var(--text-secondary);">${item.category.name.replace(/-/g, ' ')}</div>
+            <div class="item-cat">${item.category.name.replace(/-/g, ' ')}</div>
         `;
         DOM.grid.appendChild(card);
     }
 
-    // --- BÚSQUEDA ---
     async function handleSearch(e) {
         const term = e.target.value.toLowerCase();
-        
-        // Si hay búsqueda, desconectamos el scroll infinito
         if (term !== '') {
             observer.unobserve(DOM.sentinel);
         } else {
-            // Si se borra la búsqueda, reconectamos y cargamos desde 0
             DOM.grid.innerHTML = '';
             offset = 0;
             observer.observe(DOM.sentinel);
@@ -599,9 +586,13 @@
         DOM.grid.innerHTML = '';
         DOM.loader.classList.remove('hidden');
 
+        let sourceList = [];
         if (currentTab === 'pokemon') {
-            const filtered = allDataCache.filter(p => p.name.includes(term) || p.url.split('/').filter(Boolean).pop() === term);
-            const batch = filtered.slice(0, 50); // Límite visual para búsqueda
+            sourceList = currentTypeFilter ? filteredList.map(p => p.pokemon) : allMasterList;
+            
+            const filtered = sourceList.filter(p => p.name.includes(term) || p.url.split('/').filter(Boolean).pop() === term);
+            const batch = filtered.slice(0, 20); 
+            
             const promises = batch.map(p => fetch(p.url).then(r => r.json()));
             const results = await Promise.all(promises);
             results.forEach(renderPokemonCard);
@@ -609,10 +600,21 @@
         DOM.loader.classList.add('hidden');
     }
 
-    // --- MODAL Y DETALLES DE EVOLUCIÓN ---
+    window.clickEvolution = async function(pokemonName) {
+        try {
+            const evoContainer = document.getElementById('modal-evos');
+            evoContainer.style.opacity = '0.5';
+            
+            const res = await fetch(`${API_BASE}/pokemon/${pokemonName}`);
+            const data = await res.json();
+            openModal(data);
+        } catch (e) {
+            alert("Error al cargar evolución: " + e.message);
+        }
+    };
+
     async function openModal(poke) {
         const color = COLORS[poke.types[0].type.name] || '#777';
-        
         document.getElementById('modal-header').style.backgroundColor = color;
         document.getElementById('modal-name').innerText = poke.name;
         document.getElementById('modal-img').src = poke.sprites.other['official-artwork'].front_default || poke.sprites.front_default;
@@ -620,7 +622,6 @@
             `<span class="type-pill" style="background:rgba(255,255,255,0.3); border:1px solid white;">${t.type.name}</span>`
         ).join('');
 
-        // Stats
         const statsContainer = document.getElementById('modal-stats');
         statsContainer.innerHTML = '';
         poke.stats.forEach(s => {
@@ -634,9 +635,9 @@
             `;
         });
 
-        // Evoluciones
         const evoContainer = document.getElementById('modal-evos');
-        evoContainer.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-secondary);">Cargando datos de evolución...</div>';
+        evoContainer.style.opacity = '1';
+        evoContainer.innerHTML = '<div style="text-align:center; padding:10px;">Cargando evoluciones...</div>';
         
         try {
             const speciesRes = await fetch(poke.species.url);
@@ -647,17 +648,14 @@
         } catch (err) {
             evoContainer.innerHTML = '<div style="text-align:center;">No disponible</div>';
         }
-
         DOM.modal.classList.add('active');
     }
 
     function renderEvoChain(chain) {
         const container = document.getElementById('modal-evos');
         container.innerHTML = '';
-        
         let current = chain;
         let list = [];
-
         while(current) {
             const id = current.species.url.split('/').filter(Boolean).pop();
             list.push({
@@ -667,71 +665,69 @@
             });
             current = current.evolves_to.length > 0 ? current.evolves_to[0] : null;
         }
-
         list.forEach((evo, index) => {
             const method = getDetailedEvoText(evo.details, index === 0);
-            const html = `
-                <div class="evo-stage">
+            container.insertAdjacentHTML('beforeend', `
+                <div class="evo-stage" onclick="clickEvolution('${evo.name}')" title="Ver detalles de ${evo.name}">
                     <img src="${evo.img}" class="evo-img">
                     <div class="evo-info">
                         <div class="evo-name">${evo.name}</div>
                         <div class="evo-method">${method}</div>
+                        <div class="evo-hint">👆 Clic para abrir</div>
                     </div>
                 </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
+            `);
         });
     }
 
     function getDetailedEvoText(details, isFirst) {
         if (isFirst || !details) return "Forma base";
-        
         const trigger = details.trigger.name;
         let text = "";
-
         if (trigger === 'level-up') {
             if (details.min_level) text = `Nivel ${details.min_level}`;
             if (details.min_happiness) text += `${text ? ' + ' : ''}Felicidad ${details.min_happiness}`;
             if (details.time_of_day) text += ` (${details.time_of_day === 'day' ? 'Día' : 'Noche'})`;
-            if (details.location) {
-                let locName = details.location.name.replace(/-/g, ' ');
-                locName = locName.charAt(0).toUpperCase() + locName.slice(1);
-                text += ` en ${locName}`;
-            }
-            if (details.known_move) text += ` (Saber ${details.known_move.name})`;
-            if (details.known_move_type) text += ` (Ataque tipo ${details.known_move_type.name})`;
-        } 
-        else if (trigger === 'use-item') {
-            const itemNames = {
-                'fire-stone': 'Piedra Fuego', 'water-stone': 'Piedra Agua', 'thunder-stone': 'Piedra Trueno',
-                'leaf-stone': 'Piedra Hoja', 'moon-stone': 'Piedra Lunar', 'sun-stone': 'Piedra Solar',
-                'shiny-stone': 'Piedra Brillante', 'dusk-stone': 'Piedra Oscura', 'dawn-stone': 'Piedra Alba',
-                'ice-stone': 'Piedra Hielo', 'linking-cord': 'Cable Link'
-            };
+            if (details.location) text += ` en ${details.location.name.replace(/-/g, ' ')}`;
+        } else if (trigger === 'use-item') {
+            const itemNames = { 'fire-stone': 'Piedra Fuego', 'water-stone': 'Piedra Agua', 'thunder-stone': 'Piedra Trueno', 'leaf-stone': 'Piedra Hoja', 'moon-stone': 'Piedra Lunar', 'sun-stone': 'Piedra Solar', 'shiny-stone': 'Piedra Brillante', 'dusk-stone': 'Piedra Oscura', 'dawn-stone': 'Piedra Alba', 'ice-stone': 'Piedra Hielo' };
             text = itemNames[details.item.name] || details.item.name;
-        } 
-        else if (trigger === 'trade') {
+        } else if (trigger === 'trade') {
             text = "Intercambio";
-            if (details.held_item) text += ` (sujetando ${details.held_item.name})`;
-            if (details.trade_species) text += ` por ${details.trade_species.name}`;
+            if (details.held_item) text += ` + ${details.held_item.name}`;
         }
-
         return text || "Evolución especial";
     }
 
-    function closeModal() {
-        DOM.modal.classList.remove('active');
-    }
+    function closeModal() { DOM.modal.classList.remove('active'); }
 
-    // --- OFFLINE ---
+    function initTheme() {
+        const dark = localStorage.getItem('theme') === 'dark';
+        if (dark) {
+            document.body.classList.add('dark-mode');
+            DOM.themeBtn.innerHTML = '☀️ Modo Claro';
+        }
+    }
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        DOM.themeBtn.innerHTML = isDark ? '☀️ Modo Claro' : '🌙 Modo Oscuro';
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
     function saveOffline() {
         const cards = document.querySelectorAll('.card');
-        if(cards.length === 0) return alert("Carga algunos Pokémon primero.");
-        localStorage.setItem('pokedex_last_offset', offset);
-        alert(`Se han guardado los primeros ${offset} Pokémon para uso offline.`);
+        if(cards.length === 0) return alert("Carga datos primero.");
+        let dataToSave = [];
+        if(currentTab === 'pokemon') {
+            dataToSave = currentTypeFilter ? filteredList : allMasterList;
+        } else {
+            alert("Los objetos son demasiados para guardar todos offline en este navegador.");
+            return;
+        }
+        localStorage.setItem('pokedex_offline_data', JSON.stringify(dataToSave));
+        alert("Datos guardados para uso offline.");
         DOM.settingsMenu.classList.remove('show');
     }
-
 </script>
 </body>
 </html>
