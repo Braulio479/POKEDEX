@@ -6,14 +6,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#cc0000">
-    <meta name="description" content="Pokedex Ultimate Enlazada por ID - Optimizada">
-    <title>Pokédex Ultimate</title>
+    <meta name="description" content="Pokedex Ultimate Offline-First">
+    <title>Pokédex Ultimate (Offline Ready)</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
         /* --- CSS (ESTILOS) --- */
         :root {
-            /* Corrección: Eliminadas las comillas en los colores hexadecimales */
             --bg-color: #f6f8fc; --card-bg: #ffffff; --text-primary: #333;
             --header-bg: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
             --input-bg: rgba(255,255,255,0.9); --modal-overlay: rgba(0, 0, 0, 0.85);
@@ -28,7 +27,6 @@
             --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        /* Scrollbar personalizado */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
@@ -61,7 +59,6 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
         
-        /* Icono simple con CSS */
         .pokeball-icon::before {
             content: ''; display: inline-block; width: 24px; height: 24px; 
             background: radial-gradient(white 30%, transparent 31%), white;
@@ -193,7 +190,6 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #scroll-sentinel, #scroll-sentinel-items { height: 20px; width: 100%; }
 
-        /* TOAST NOTIFICATION */
         .toast {
             visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center;
             border-radius: 8px; padding: 12px; position: fixed; z-index: 2000; left: 50%; bottom: 30px;
@@ -318,7 +314,7 @@
     <div id="toast" class="toast">Mensaje de notificación</div>
 
     <script>
-        /* --- JAVASCRIPT (LÓGICA OPTIMIZADA) --- */
+        /* --- JAVASCRIPT (LOGICA OFFLINE-FIRST) --- */
         
         // --- CONFIGURACIÓN ---
         const typeColors = {
@@ -330,7 +326,6 @@
         };
         const statNames = { 'hp': 'PS', 'attack': 'ATQ', 'defense': 'DEF', 'special-attack': 'ATQ. ESP', 'special-defense': 'DEF. ESP', 'speed': 'VEL' };
 
-        // Estado de la aplicación
         const state = {
             currentTab: 'pokemon',
             offsetPoke: 0, limitPoke: 24, isLoadingPoke: false,
@@ -342,7 +337,6 @@
             db: null
         };
 
-        // --- UTILIDADES ---
         const showToast = (message, type = 'default') => {
             const toast = document.getElementById('toast');
             toast.innerText = message;
@@ -350,11 +344,10 @@
             setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
         };
 
-        // --- INDEXEDDB (MEJORADA) ---
-        // Ahora guardamos también los datos JSON para permitir offline real en la lista
+        // --- INDEXEDDB ---
         function initDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open('PokedexOfflineDB', 2); // Versión 2
+                const request = indexedDB.open('PokedexOfflineDB', 2);
                 request.onupgradeneeded = (e) => {
                     const db = e.target.result;
                     if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets');
@@ -395,12 +388,10 @@
                     const imgElement = e.target;
                     if(imgElement.src.startsWith('blob:')) return; 
                     
-                    // Intentar cargar desde DB
                     const offlineUrl = await getDataFromDB(imgElement.src, 'assets');
                     if(offlineUrl) {
                         imgElement.src = URL.createObjectURL(offlineUrl);
                     } else if (!imgElement.src.includes('via.placeholder')) {
-                        // Fallback visual si falla todo
                         imgElement.style.opacity = '0.5';
                     }
                 }
@@ -412,40 +403,56 @@
             setupEventListeners();
         });
 
+        // --- CAMBIO CLAVE: ESTRATEGIA OFFLINE-FIRST ---
         async function loadInitialData() {
+            // 1. Cargar SIEMPRE de LocalStorage inmediatamente
             const cachedPoke = localStorage.getItem('allPokemonList');
             const cachedItems = localStorage.getItem('allItemsList');
-            const loader = document.getElementById('loader');
             
             if (cachedPoke) state.allPokemonList = JSON.parse(cachedPoke);
             if (cachedItems) state.allItemsList = JSON.parse(cachedItems);
 
-            // Cargar vista inicial
+            // 2. Si ya tenemos datos en memoria, renderizar YA (sin esperar red)
+            if (state.allPokemonList.length > 0) {
+                fetchPokemons();
+            }
+
+            // 3. Solo si hay internet, intentar actualizar la lista maestra
             if (navigator.onLine) {
-                loader.style.display = 'block';
                 try {
-                    if (!cachedPoke) {
-                        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
-                        state.allPokemonList = (await res.json()).results;
-                        localStorage.setItem('allPokemonList', JSON.stringify(state.allPokemonList));
-                    }
-                    if (!cachedItems) await fetchItemsList();
+                    const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
+                    const newList = (await res.json()).results;
+                    state.allPokemonList = newList;
+                    localStorage.setItem('allPokemonList', JSON.stringify(newList)); // Guardar actualización
                     
-                    await fetchPokemons();
+                    if (!cachedPoke) fetchPokemons(); // Si no teníamos nada antes, cargar ahora
                 } catch (e) {
-                    console.error(e);
-                    showToast('Error de conexión inicial', 'error');
-                    loadFromCache();
+                    console.log("Fallo red, usando cache");
+                    // Si falla la red pero tenemos cache, no hacemos nada porque ya cargamos arriba
+                }
+                
+                // Similar para items
+                if (!cachedItems) {
+                    try {
+                        await fetchItemsList();
+                    } catch(e) {}
                 }
             } else {
-                loadFromCache();
+                // Offline
+                if (state.allPokemonList.length === 0) {
+                    // Realmente no hay datos ni en cache
+                    showToast("Sin conexión y sin datos. Conéctate para descargar.", "error");
+                    document.getElementById('loader').innerHTML = "<p>Modo Offline: No hay datos descargados.</p>";
+                    document.getElementById('loader').style.display = 'block';
+                } else {
+                    showToast("Modo Offline activo", "default");
+                }
             }
-            loader.style.display = 'none';
-        }
-
-        function loadFromCache() {
-            if (state.allPokemonList.length > 0) fetchPokemons();
-            else showToast('Sin conexión y sin datos locales.', 'error');
+            
+            // Ocultar loader inicial
+            if(state.allPokemonList.length > 0) {
+                document.getElementById('loader').style.display = 'none';
+            }
         }
 
         function setupEventListeners() {
@@ -473,8 +480,6 @@
                 }
             });
         }
-
-        // --- FUNCIONES CORE ---
 
         function initTypeFilter() {
             const container = document.getElementById('type-grid-container');
@@ -596,10 +601,8 @@
                         return; 
                     }
                     
-                    // Mostrar spinner de carga
                     gridPoke.innerHTML = '<div class="spinner" style="display:block; margin:0 auto;"></div>';
 
-                    // Limitar a 50 resultados para búsqueda para no saturar
                     Promise.all(matches.slice(0, 50).map(p => getPokemonData(p.url))).then(results => { 
                         gridPoke.innerHTML = ''; 
                         const fragment = document.createDocumentFragment();
@@ -622,21 +625,21 @@
                     });
                     gridItems.appendChild(fragment);
                 }
-            }, 400); // Debounce
+            }, 400);
         }
 
-        // Función unificada para obtener datos de Pokemon (Red o DB)
         async function getPokemonData(url) {
-            // Intentar obtener de IDB primero
+            // 1. Check DB
             const cached = await getDataFromDB(url, 'pokemon_data');
             if (cached) return cached;
 
+            // 2. Si no está en DB y estamos offline, devolver null
             if (!navigator.onLine) return null;
 
+            // 3. Fetch y guardar
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                // Guardar en IDB para futuro
                 saveDataToDB(url, data, 'pokemon_data');
                 return data;
             } catch (e) {
@@ -646,8 +649,10 @@
 
         async function fetchPokemons() {
             if (state.isLoadingPoke || state.isSearching) return;
+            
+            // CORRECCIÓN: No bloquear si offline si tenemos datos en memoria
             if(!navigator.onLine && state.allPokemonList.length === 0) { 
-                document.getElementById('loader').innerHTML = "<p>Sin conexión.</p>"; 
+                document.getElementById('loader').innerHTML = "<p>Sin conexión y sin datos descargados.</p>"; 
                 document.getElementById('loader').style.display = 'block'; 
                 return; 
             }
@@ -657,14 +662,7 @@
             
             try {
                 let dataResults;
-                // Si estamos offline, usamos la lista local cortada por offset
-                if (navigator.onLine) {
-                    // Si estamos al inicio y la lista está vacía, reintentar cargar maestro
-                    if(state.allPokemonList.length === 0) {
-                        await loadInitialData();
-                    }
-                }
-                
+                // Usar siempre la lista en memoria (que vino de localStorage al inicio)
                 dataResults = state.allPokemonList.slice(state.offsetPoke, state.offsetPoke + state.limitPoke);
                 
                 if(dataResults.length === 0) { 
@@ -673,7 +671,6 @@
                     return; 
                 }
 
-                // Fetch datos (paralelo)
                 const promises = dataResults.map(x => getPokemonData(x.url));
                 const results = await Promise.all(promises);
                 
@@ -688,7 +685,6 @@
                 state.offsetPoke += state.limitPoke;
             } catch (e) { 
                 console.error(e); 
-                showToast("Error cargando Pokémon", "error");
             } finally { 
                 state.isLoadingPoke = false; 
                 document.getElementById('loader').style.display = 'none'; 
@@ -722,20 +718,28 @@
             m.classList.add('show'); 
             updatePokeContent(p);
             
-            // Evoluciones
             const evoContainer = document.getElementById('evo-timeline');
             evoContainer.innerHTML = '<p style="font-size:0.8rem; opacity:0.6;">Cargando cadena...</p>';
             
             try {
-                const s = await fetch(p.species.url).then(r=>r.json());
-                document.getElementById('modal-gen').innerText = s.generation.name.split('-')[1].toUpperCase();
-                
-                if (state.currentEvoChainUrl !== s.evolution_chain.url) {
-                    state.currentEvoChainUrl = s.evolution_chain.url;
-                    const chainData = await fetch(state.currentEvoChainUrl).then(r=>r.json());
-                    renderEvo(chainData.chain, p.name);
-                } else {
-                    highlightEvo(p.name);
+                // Intentar obtener species de la DB primero para ahorrar llamadas si está offline
+                let s;
+                if(p.species.url) {
+                    // Nota: No guardamos species en DB en este código simple, así que fetch directo o fail
+                    if(navigator.onLine) {
+                        s = await fetch(p.species.url).then(r=>r.json());
+                        document.getElementById('modal-gen').innerText = s.generation.name.split('-')[1].toUpperCase();
+                        
+                        if (state.currentEvoChainUrl !== s.evolution_chain.url) {
+                            state.currentEvoChainUrl = s.evolution_chain.url;
+                            const chainData = await fetch(state.currentEvoChainUrl).then(r=>r.json());
+                            renderEvo(chainData.chain, p.name);
+                        } else {
+                            highlightEvo(p.name);
+                        }
+                    } else {
+                        evoContainer.innerHTML = '<p style="font-size:0.8rem; opacity:0.6;">Sin conexión para ver detalles extra.</p>';
+                    }
                 }
             } catch(e){
                 evoContainer.innerHTML = '<p style="font-size:0.8rem; opacity:0.6;">No hay datos de evolución.</p>';
@@ -749,10 +753,14 @@
                 const p = await getPokemonData(url);
                 if(!p) throw new Error("No encontrado");
 
-                const s = await fetch(p.species.url).then(r=>r.json());
+                // Evolución offline limitada: solo si podemos conectar
+                if (navigator.onLine) {
+                    const s = await fetch(p.species.url).then(r=>r.json());
+                    document.getElementById('modal-gen').innerText = s.generation.name.split('-')[1].toUpperCase();
+                }
+
                 updatePokeContent(p);
-                document.getElementById('modal-gen').innerText = s.generation.name.split('-')[1].toUpperCase();
-                highlightEvo(name);
+                if(state.currentEvoChainUrl) highlightEvo(name);
             } catch(e){
                 showToast("Error al cambiar Pokémon", "error");
             }
@@ -847,7 +855,6 @@
             try {
                 const res = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
                 const data = await res.json();
-                // Limitar a 50 para no colapsar
                 const pokemonList = data.pokemon.slice(0, 50); 
                 const promises = pokemonList.map(p => getPokemonData(p.pokemon.url));
                 const results = await Promise.all(promises);
@@ -875,7 +882,7 @@
         async function fetchItems() {
             if(state.isLoadingItems || state.isSearching) return;
             if(!navigator.onLine && state.allItemsList.length === 0) { 
-                document.getElementById('items-loader').innerHTML = "<p>Sin conexión.</p>"; 
+                document.getElementById('items-loader').innerHTML = "<p>Sin conexión y sin datos.</p>"; 
                 document.getElementById('items-loader').style.display = 'block'; 
                 return; 
             }
@@ -908,6 +915,13 @@
             m.classList.add('show');
             document.getElementById('item-modal-name').innerText='Cargando...'; 
             document.getElementById('holders-grid').innerHTML='';
+            
+            // Intentar buscar en DB (no implementado items DB completa en este script para ahorrar espacio, usa API)
+            if(!navigator.onLine) {
+                document.getElementById('item-modal-desc').innerText = "Sin conexión para ver detalles de objetos.";
+                return;
+            }
+
             try {
                 const i = await fetch(url).then(r=>r.json());
                 document.getElementById('item-modal-img').src = i.sprites.default;
@@ -949,12 +963,13 @@
             progressBar.style.width = "1%";
 
             try {
-                // Asegurar lista maestra
+                // 1. Asegurar lista maestra
                 if(state.allPokemonList.length === 0) {
                     const r = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10000');
                     state.allPokemonList = (await r.json()).results;
-                    localStorage.setItem('allPokemonList', JSON.stringify(state.allPokemonList));
                 }
+                // GUARDAR LISTA MAESTRA SIEMPRE
+                localStorage.setItem('allPokemonList', JSON.stringify(state.allPokemonList));
                 
                 const totalPokes = state.allPokemonList.length;
                 let totalItems = 0;
@@ -962,7 +977,11 @@
                 let totalSteps = totalPokes;
 
                 if(includeItems) {
-                    if(state.allItemsList.length === 0) await fetchItemsList();
+                    if(state.allItemsList.length === 0) {
+                        const r = await fetch('https://pokeapi.co/api/v2/item?limit=10000');
+                        state.allItemsList = (await r.json()).results;
+                    }
+                    localStorage.setItem('allItemsList', JSON.stringify(state.allItemsList));
                     totalItems = state.allItemsList.length;
                     totalSteps += totalItems;
                 }
@@ -972,26 +991,26 @@
                     progressText.innerText = text; 
                 };
 
-                // Descargar Pokémon en lotes
-                for (let i = 0; i < totalPokes; i += 20) { // Lotes más pequeños para no bloquear
+                // Descargar Pokémon
+                for (let i = 0; i < totalPokes; i += 20) {
                     const batch = state.allPokemonList.slice(i, i + 20);
                     const promises = batch.map(async (p) => {
                         try {
-                            // Obtener datos
                             const data = await fetch(p.url).then(r => r.json());
-                            // Guardar datos JSON en DB
+                            // Guardar JSON
                             saveDataToDB(p.url, data, 'pokemon_data');
                             
-                            // Guardar imagen
+                            // Guardar Imagen
                             const img = data.sprites.other['official-artwork'].front_default || data.sprites.front_default;
-                            if(img) await saveDataToDB(img, await (await fetch(img)).blob(), 'assets');
+                            if(img) {
+                                const blob = await (await fetch(img)).blob();
+                                saveDataToDB(img, blob, 'assets');
+                            }
                         } catch(e){}
                     });
                     await Promise.all(promises);
                     currentStep += batch.length;
                     updateProgress(Math.round((currentStep / totalSteps) * 100), `Descargando Pokémon (${currentStep}/${totalPokes})...`);
-                    
-                    // Pequeña pausa para permitir que el UI respire
                     await new Promise(r => setTimeout(r, 10)); 
                 }
 
@@ -1002,7 +1021,8 @@
                         const promises = batch.map(async (item) => {
                             try {
                                 const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${item.name}.png`;
-                                await saveDataToDB(img, await (await fetch(img)).blob(), 'assets');
+                                const blob = await (await fetch(img)).blob();
+                                saveDataToDB(img, blob, 'assets');
                             } catch(e){}
                         });
                         await Promise.all(promises);
@@ -1017,14 +1037,14 @@
                 updateDownloadMenuUI(true);
                 progressText.innerText = "¡Descarga Completa!";
                 progressBar.style.background = "#4caf50";
-                showToast("¡Datos descargados correctamente!", "success");
+                showToast("¡Datos listos para usar offline!", "success");
                 setTimeout(() => { progressContainer.style.display = 'none'; }, 3000);
 
             } catch (e) {
                 console.error(e);
                 progressText.innerText = "Error en la descarga.";
                 progressBar.style.background = "#ff5252";
-                showToast("Error en la descarga. Inténtalo de nuevo.", "error");
+                showToast("Error en la descarga.", "error");
             }
         }
 
@@ -1037,14 +1057,13 @@
         function closeModal(id) {
             const el = document.getElementById(id);
             el.classList.remove('show');
-            setTimeout(() => { el.style.display = 'none'; }, 300); // Esperar a la transición
+            setTimeout(() => { el.style.display = 'none'; }, 300);
         }
 
         function openTypeFilter() {
             closeMenu();
             const modal = document.getElementById('type-filter-modal');
             modal.style.display = 'flex';
-            // Pequeño hack para activar transición
             setTimeout(() => modal.classList.add('show'), 10);
         }
     </script>
