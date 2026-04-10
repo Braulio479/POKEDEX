@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokedex Ultimate - Uso de Objetos</title>
+    <title>Pokedex Ultimate - Scroll Infinito</title>
     <style>
         /* =========================================
            VARIABLES Y TEMAS
@@ -87,9 +87,17 @@
         .input-control:focus { border-color: var(--accent-color); }
 
         /* =========================================
-           GRID PRINCIPAL
+           GRID PRINCIPAL (RESPONSIVE)
            ========================================= */
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.5rem; max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .grid-container { 
+            display: grid; 
+            /* Por defecto escritorio: mínimo 160px */
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 1.5rem; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 1rem; 
+        }
         
         .card {
             background: var(--bg-card); border-radius: 16px; overflow: hidden; cursor: pointer;
@@ -159,7 +167,7 @@
             font-size: 1.05rem; line-height: 1.6;
         }
 
-        /* NUEVO: Grid de Pokémon que pueden usar el objeto */
+        /* Grid de Pokémon que pueden usar el objeto */
         .held-by-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
@@ -190,21 +198,44 @@
             color: var(--text-main); font-weight: 600;
         }
 
-        /* Loader & Botones */
+        /* Loader */
         .loader { display: none; text-align: center; margin: 2rem; font-size: 1.2rem; color: var(--text-secondary); }
-        .load-more-btn { display: block; margin: 2rem auto; padding: 1rem 2rem; background: var(--accent-color); color: white; border: none; border-radius: 30px; font-size: 1rem; cursor: pointer; box-shadow: var(--shadow); font-weight: bold; }
-        .load-more-btn:hover { background: var(--accent-hover); }
+        
+        /* Ocultamos el botón de cargar más, usamos scroll infinito */
+        .load-more-btn { display: none; }
 
         /* Items Grid Style */
         .items-grid .card-img { width: 80px; height: 80px; }
         .items-grid .card-img-container { height: 100px; }
 
+        /* =========================================
+           MEDIA QUERY MÓVIL (OPTIMIZADO)
+           ========================================= */
         @media (max-width: 600px) {
-            .filter-bar { grid-template-columns: 1fr; }
-            .evo-step { flex-direction: column; text-align: center; }
+            /* Filtros más compactos */
+            .filter-bar { grid-template-columns: 1fr; padding: 1rem; }
+            
+            /* GRID MÁS DENSO */
+            .grid-container {
+                /* Reduce el mínimo a 100px para caben 3 o 4 columnas */
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 10px; 
+                padding: 0 10px;
+            }
+
+            /* Tarjetas más pequeñas en móvil */
+            .card-img-container { width: 80px; height: 80px; }
+            .card-name { font-size: 0.9rem; margin: 0.2rem 0; }
+            .card-id { font-size: 0.7rem; }
+            .type-pill { font-size: 0.55rem; padding: 1px 6px; }
+            
+            /* Modal optimizado */
             .modal-content { width: 100%; height: 100%; border-radius: 0; max-height: 100vh; }
             .item-detail-row { flex-direction: column; gap: 5px; }
             .item-label { width: 100%; }
+            
+            /* Evolución en columna en móvil */
+            .evo-step { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
@@ -284,9 +315,17 @@
         </div>
     </div>
 
-    <main id="grid" class="grid-container"></main>
+    <main>
+        <div id="grid" class="grid-container"></div>
+        
+        <!-- Loader visual -->
+        <div id="loader" class="loader">Cargando más datos...</div>
+        
+        <!-- Elemento centinela para el Scroll Infinito -->
+        <div id="scroll-sentinel" style="height: 20px;"></div>
+    </main>
     
-    <div id="loader" class="loader">Cargando datos...</div>
+    <!-- Botón oculto por defecto (fallback visual si falla JS, pero no se usa) -->
     <button id="loadMoreBtn" class="load-more-btn" onclick="loadMore()">Cargar más</button>
 
     <!-- MODAL -->
@@ -314,7 +353,7 @@
             allItemsList: [], 
             filteredItemsList: [],
             offset: 0,
-            limit: 20,
+            limit: 20, // Cantidad a cargar por lote
             isLoading: false
         };
 
@@ -340,9 +379,24 @@
         };
 
         // =========================================
-        // INICIO
+        // INICIO & OBSERVER (SCROLL INFINITO)
         // =========================================
         window.addEventListener('DOMContentLoaded', async () => {
+            // Configurar Intersection Observer para el scroll infinito
+            const sentinel = document.getElementById('scroll-sentinel');
+            
+            const observer = new IntersectionObserver((entries) => {
+                // Si el centinela es visible y no estamos cargando ya
+                if(entries[0].isIntersecting && !state.isLoading) {
+                    loadMore();
+                }
+            }, {
+                rootMargin: '100px' // Comienza a cargar 100px antes de llegar al final
+            });
+
+            observer.observe(sentinel);
+
+            // Cargar datos iniciales
             try {
                 const res = await fetch(`${API_BASE}/pokemon?limit=10000`);
                 const data = await res.json();
@@ -362,7 +416,6 @@
             if (state.isLoading) return;
             state.isLoading = true;
             document.getElementById('loader').style.display = 'block';
-            document.getElementById('loadMoreBtn').style.display = 'none';
 
             const grid = document.getElementById('grid');
             if (state.offset === 0) grid.innerHTML = '';
@@ -371,7 +424,7 @@
             let batch = sourceList.slice(state.offset, state.offset + state.limit);
             
             if(batch.length === 0 && state.offset === 0) {
-                grid.innerHTML = '<p style="text-align:center; width:100%;">No se encontraron resultados.</p>';
+                grid.innerHTML = '<p style="text-align:center; width:100%; grid-column: 1/-1;">No se encontraron resultados.</p>';
                 state.isLoading = false;
                 document.getElementById('loader').style.display = 'none';
                 return;
@@ -394,12 +447,10 @@
 
             state.offset += state.limit;
             state.isLoading = false;
-            document.getElementById('loader').style.display = 'none';
             
-            if (state.offset < sourceList.length) {
-                document.getElementById('loadMoreBtn').style.display = 'block';
-            } else {
-                document.getElementById('loadMoreBtn').style.display = 'none';
+            // Solo ocultamos loader si no hay más datos
+            if (state.offset >= sourceList.length) {
+                document.getElementById('loader').style.display = 'none';
             }
         }
 
@@ -549,7 +600,6 @@
             // --- SECCIÓN POKEMON QUE PUEDEN USARLO ---
             let heldByHTML = '';
             if (item.held_by_pokemon && item.held_by_pokemon.length > 0) {
-                // Mostramos solo los primeros 20 para no saturar
                 const holders = item.held_by_pokemon.slice(0, 20);
                 heldByHTML += `<div class="section-title">Pokémon que lo pueden sostener</div>`;
                 heldByHTML += `<div class="held-by-grid">`;
@@ -557,7 +607,6 @@
                 holders.forEach(h => {
                     const pName = h.pokemon.name;
                     const pId = h.pokemon.url.split('/').filter(Boolean).pop();
-                    // Construimos la URL de la imagen directamente para velocidad
                     const pImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pId}.png`;
                     
                     heldByHTML += `
@@ -573,7 +622,6 @@
                 }
                 heldByHTML += `</div>`;
             } else {
-                // Si es un objeto consumible como Poción
                 heldByHTML += `<div class="section-title">Uso</div><p style="color:var(--text-secondary)">Este es un objeto de consumo o herramienta que no suele llevarse equipado por Pokémon en la naturaleza.</p>`;
             }
 
@@ -606,26 +654,18 @@
             document.body.style.overflow = 'auto';
         }
 
-        // Función para cambiar de pestaña y cargar un Pokemon específico desde un objeto
         async function switchToPokemonFromItem(pokemonName) {
-            // Cerrar modal actual
             closeModal();
-            
-            // Esperar un momento a que se cierre visualmente
             setTimeout(async () => {
-                // Cambiar pestaña
                 const tabs = document.querySelectorAll('.tab-btn');
-                tabs[0].click(); // Click en Pokémon
+                tabs[0].click(); 
 
-                // Buscar el pokemon en la lista completa
                 const target = state.allPokemonList.find(p => p.name === pokemonName);
                 
                 if (target) {
-                    // Forzar búsqueda para que aparezca solo este pokemon (simulación de filtro)
                     document.getElementById('searchInput').value = pokemonName;
                     applyFilters(); 
                     
-                    // Obtener detalles y abrir modal directamente
                     try {
                         const res = await fetch(target.url);
                         const data = await res.json();
@@ -735,19 +775,17 @@
             const grid = document.getElementById('grid');
             const pokeFilters = document.getElementById('pokemonFilters');
             const itemsFilters = document.getElementById('itemsFilters');
-            const loadBtn = document.getElementById('loadMoreBtn');
+            // El loader se maneja ahora por el observer
 
             if (tab === 'pokemon') {
                 pokeFilters.style.display = 'grid';
                 itemsFilters.style.display = 'none';
-                loadBtn.style.display = 'block';
                 grid.className = 'grid-container';
                 if(state.filteredList.length === 0) applyFilters();
                 else renderBatch();
             } else {
                 pokeFilters.style.display = 'none';
                 itemsFilters.style.display = 'grid';
-                loadBtn.style.display = 'block';
                 grid.className = 'grid-container items-grid';
                 grid.innerHTML = '';
                 loadItems();
